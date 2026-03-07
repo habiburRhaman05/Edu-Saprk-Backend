@@ -55,9 +55,6 @@ try {
     });
 
 
-
-
-
   } catch (error) {
     console.error('❌ Error initializing app:', error);
     process.exit(1);

@@ -95,7 +95,7 @@ const handleAvaterChange = async (req:Request,res:Response,next:NextFunction) =>
 
     await prisma.user.update({
       where:{
-        id:userid
+        id:userid!
       },
       data:{
         profileAvater:result.path

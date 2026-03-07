@@ -6,8 +6,9 @@
   "type": "module",
   "scripts": {
     "dev": "npx tsx watch src/server.ts",
-    "build": "prisma generate && prisma migrate deploy && tsup",
-    "start": "node dist/server.js"
+    
+   "build": "tsup src --format cjs --dts",
+  "start": "node dist/index.js"
   },
   "author": "",
   "license": "ISC",
@@ -21,6 +22,7 @@
     "@types/node": "^25.2.0",
     "@types/nodemailer": "^7.0.4",
     "@types/pg": "^8.16.0",
+    "copyfiles": "^2.4.1",
     "express": "^5.2.1",
     "prisma": "^7.2.0",
     "ts-node": "^10.9.2",
