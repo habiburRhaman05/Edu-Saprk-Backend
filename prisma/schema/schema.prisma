@@ -1,4 +1,3 @@
-
 generator client {
   provider = "prisma-client"
   output   = "../../generated/prisma"
@@ -8,15 +7,46 @@ datasource db {
   provider = "postgresql"
 }
 
+model Category {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  subjects  String[]
+  createdAt DateTime @default(now())
+}
+
+model Booking {
+  id             String        @id @default(uuid())
+  studentId      String
+  tutorId        String
+  dateTime       DateTime
+  status         BookingStatus @default(CONFIRMED)
+  availabilityId String
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  availability   Availability  @relation(fields: [availabilityId], references: [id])
+  student        Student       @relation("StudentBookings", fields: [studentId], references: [id])
+  tutor          TutorProfile  @relation(fields: [tutorId], references: [id])
+  review         Review?
+  payments Payment?
+}
+
+model Review {
+  id        String   @id @default(uuid())
+  bookingId String   @unique
+  studentId String
+  tutorId   String
+  rating    Int
+  comment   String
+  createdAt DateTime @default(now())
+  booking   Booking  @relation(fields: [bookingId], references: [id])
+  student   Student   @relation("StudentReviews", fields: [studentId], references: [id])
+}
+
 enum Role {
   STUDENT
   TUTOR
   ADMIN
-}
-
-enum UserStatus {
-  ACTIVE
-  BANNED
+  MODERATOR
 }
 
 enum BookingStatus {
@@ -25,104 +55,55 @@ enum BookingStatus {
   CANCELLED
 }
 
-
-model User {
-  id        String      @id @default(uuid())
-  name      String
-  email     String      @unique
-  password  String
-  location  String?
-  phoneNumber  String?
-  profileAvater String?
-  role      Role
-  status    UserStatus  @default(ACTIVE)
-emailVerified Boolean
-  // Relations
-  tutorProfile TutorProfile?
-  studentBookings Booking[] @relation("StudentBookings")
-
-  reviewsGiven    Review[]  @relation("StudentReviews")
-
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+enum UserRole {
+  USER
+  MANAGER
+  ADMIN
 }
 
-
-model TutorProfile {
-  id           String   @id @default(uuid())
-  userId       String   @unique
-  bio          String
-  hourlyRate   Int
-  experience  String
-  availability Availability[]
-
-  
-  user        User      @relation(fields: [userId], references: [id])
-
-  subjects  String[]
-  bookings  Booking[]
-  categoryId  String
-
-  category  String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-model Availability {
-  id        String       @id @default(uuid())
-  tutorId   String
-  tutor     TutorProfile @relation(fields: [tutorId], references: [id])
-  date      DateTime
-  bookings Booking[]
-  startTime String
-  isBooked  Boolean  @default(false)
-  endTime   String
-  createdAt DateTime     @default(now())
-  updatedAt DateTime     @updatedAt
+enum AnalysisType {
+  ATS_SCAN
+  JOB_MATCHER
 }
 
-model Category {
-  id    String @id @default(uuid())
-  name  String @unique
-  subjects  String[]
-  createdAt DateTime @default(now())
+enum UserStatus {
+  ACTIVE
+  BANNED
+  DELETED
 }
 
-
-model Booking {
-  id             String @id @default(uuid())
-  studentId      String
-  tutorId        String
-  dateTime       DateTime
-  status         BookingStatus @default(CONFIRMED)
-  availabilityId String
-
-  // Relations
-  student User @relation("StudentBookings", fields: [studentId], references: [id])
-
-  tutor TutorProfile @relation(fields: [tutorId], references: [id])
-
-  availability Availability @relation(fields: [availabilityId], references: [id])
-
-  review Review?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
 }
 
+enum PaymentMethod {
+  STRIPE
+  SSLCOMMERZ
+  PAYPAL
+}
 
+enum CreditType {
+  PURCHASE
+  USAGE
+  REFUND
+  ADMIN_ADJUST
+}
 
-model Review {
-  id        String @id @default(uuid())
-  bookingId String @unique
-  studentId String
-  tutorId   String
+enum BlogStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
 
-  rating    Int
-  comment   String
+enum IssueType {
+  ISSUE
+  IMPROVEMENT
+  FEEDBACK
+}
 
-  // Relations
-  booking Booking @relation(fields: [bookingId], references: [id])
-  student User    @relation("StudentReviews", fields: [studentId], references: [id])
-  createdAt DateTime @default(now())
+enum IssueStatus {
+  PENDING
+  SUCCESS
 }

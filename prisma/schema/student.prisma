@@ -1,0 +1,21 @@
+model Student {
+  id              String        @id @default(uuid())
+  name            String
+  email           String        @unique
+  password        String
+  bio        String
+  location        String?
+  hobbies        String?
+  skills        String?
+  phoneNumber     String?
+  profileAvater   String?
+  role            Role
+  status          UserStatus    @default(ACTIVE)
+  emailVerified   Boolean
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  studentBookings Booking[]     @relation("StudentBookings")
+  reviewsGiven    Review[]      @relation("StudentReviews")
+  transactions Payment[]
+}
+

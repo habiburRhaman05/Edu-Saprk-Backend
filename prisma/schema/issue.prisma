@@ -1,0 +1,27 @@
+
+
+model Issue {
+  id            String      @id @default(cuid())
+  title         String
+  username         String
+  description   String      @db.Text
+  type          IssueType   @default(ISSUE)
+  status        IssueStatus @default(PENDING)
+  location      String?     // e.g., "Mobile App", "Checkout Page"
+  userMessage   String      @db.Text // The "original honest message"
+  adminFeedback String?     @db.Text
+  imageUrl      String?     // Optional single image
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  replies       Reply[]
+}
+
+model Reply {
+  id        String   @id @default(cuid())
+  content   String   @db.Text
+  isAdmin   Boolean  @default(false)
+  issueId   String
+  issue     Issue    @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
+

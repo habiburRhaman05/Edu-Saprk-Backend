@@ -1,0 +1,39 @@
+// Define your blog model
+model Blog {
+  id              String    @id @default(uuid())
+  title           String
+  slug            String    @unique
+  thumbnail            String?    
+  excerpt         String?   @db.Text
+  fullContent     String    @db.VarChar(10000) 
+  seoTags         Json?    
+  category        String?
+  comments Comment[]
+  status          BlogStatus @default(DRAFT)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  publishedAt     DateTime?
+  authorId        String
+  author          Moderator      @relation(fields: [authorId], references: [id])
+
+  @@index([slug])
+  @@index([authorId])
+}
+
+model Comment {
+  id        String   @id @default(uuid())
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  blogId    String
+  blog      Blog     @relation(fields: [blogId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User  @relation(fields: [authorId], references: [id])
+  parentId  String?
+  parent    Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  replies   Comment[] @relation("CommentReplies")
+
+  @@index([blogId])
+  @@index([authorId])
+  @@index([parentId])
+}
