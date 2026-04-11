@@ -8,17 +8,18 @@ import { authSchemas } from "./auth.schema";
 import { studentSchemas } from "../student/student.schema";
 import { studentController } from "../student/student.controller";
 import { upload } from "../upload/upload-image.service";
+import { UserRole } from "../../../generated/prisma/enums";
 
 
 const router:Router = Router();
 
 router.post("/register",validateRequest(authSchemas.registerUserSchema), authControllers.registerController);
 router.post("/login",validateRequest(authSchemas.loginSchema), authControllers.loginController);
-router.get("/me", authMiddleware, authControllers.meController);
-router.put("/profile/change-avater",authMiddleware,roleMiddleware(["STUDENT","TUTOR"]),upload.single("file"), authControllers.handleAvaterChange);
-router.post("/logout", authMiddleware, authControllers.logoutController);
+router.get("/me", authMiddleware, authControllers.getUserProfileController);
+router.put("/profile/change-avater",authMiddleware,roleMiddleware([UserRole.STUDENT,UserRole.TUTOR,UserRole.ADMIN,UserRole.MODERATOR,UserRole.TECHNICIAN]),upload.single("file"), authControllers.changeProfileAvatar);
+router.put("/profile/update",authMiddleware,roleMiddleware([UserRole.STUDENT,UserRole.TUTOR,UserRole.ADMIN,UserRole.MODERATOR,UserRole.TECHNICIAN]),upload.single("file"), authControllers.updateProfileInfo);
+router.post("/logout", authMiddleware, authControllers.logoutUserController);
 //  ============== FOR STUDENT/USER AND TUTOR BOTH CAN USE IT ==============
-
-router.put("/change-password",authMiddleware,roleMiddleware(['STUDENT',"TUTOR"]), validateRequest(studentSchemas.changePasswordSchema), studentController.changePassword);
-router.delete("/delete-account",authMiddleware,roleMiddleware(['STUDENT',"TUTOR"]), studentController.deleteAccount);
+router.put("/change-password",authMiddleware, validateRequest(studentSchemas.changePasswordSchema), studentController.changePassword);
+router.delete("/delete-account",authMiddleware,roleMiddleware([UserRole.STUDENT,UserRole.TUTOR]), studentController.deleteAccount);
 export default router;

@@ -42,12 +42,7 @@ model Review {
   student   Student   @relation("StudentReviews", fields: [studentId], references: [id])
 }
 
-enum Role {
-  STUDENT
-  TUTOR
-  ADMIN
-  MODERATOR
-}
+
 
 enum BookingStatus {
   CONFIRMED
@@ -57,8 +52,11 @@ enum BookingStatus {
 
 enum UserRole {
   USER
-  MANAGER
   ADMIN
+  STUDENT
+  TECHNICIAN
+  TUTOR
+  MODERATOR
 }
 
 enum AnalysisType {

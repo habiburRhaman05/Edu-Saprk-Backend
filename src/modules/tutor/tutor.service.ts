@@ -1,10 +1,9 @@
 // src/modules/tutor/tutor.service.ts
 import { Prisma } from "../../../generated/prisma/client";
-import { Role, UserStatus } from "../../../generated/prisma/enums";
 import { prisma } from "../../lib/prisma";
 import { AppError } from "../../utils/AppError";
 import { authServices } from "../auth/auth.service";
-import { StatusEnum, TutorFilters, TutorProfileCreatePayload, TutorProfileUpdatePayload } from "./types";
+import { TutorFilters, TutorProfileCreatePayload, TutorProfileUpdatePayload } from "./types";
 
 // -------------------- CREATE TUTOR PROFILE --------------------
 const createTutorProfile = async (userId: string, payload: TutorProfileCreatePayload) => {
@@ -21,6 +20,7 @@ const createTutorProfile = async (userId: string, payload: TutorProfileCreatePay
       categoryId: payload.categoryId,
       category: payload.category,
       experience: payload.experience,
+      profileAvatar:""
     },
   });
   return profile;
@@ -56,8 +56,6 @@ const updateTutorProfile = async (
       where: { id: userId },
       data: {
         name: user.name,
-        phoneNumber: user.phoneNumber,
-        location: user.location,
       },
     }),
   ]);
@@ -102,7 +100,7 @@ const getTutorSessions = async (userId: string) => {
       createdAt: true,
       student:{
         select:{
-          profileAvater:true,
+          profileAvatar:true,
           name:true
         }
       },
@@ -124,7 +122,7 @@ const getTutorSessions = async (userId: string) => {
             select: {
               id: true,
               name: true,
-              profileAvater: true,
+              image: true,
             },
           },
         },
@@ -317,7 +315,7 @@ const markdSessionFinish = async (userId: string, bookingId: string,status:strin
       id: true,
       name: true,
       email: true,
-      profileAvater: true,
+      image: true,
       role: true,
       status: true,
       createdAt: true,
@@ -443,7 +441,7 @@ const tutorDashboardData = async (tutorId:string) => {
         where: { status: 'CONFIRMED' },
         include: {
           student: {
-            select: { name: true, profileAvater: true }
+            select: { name: true, profileAvatar: true }
           }
         },
         orderBy: { dateTime: 'asc' },

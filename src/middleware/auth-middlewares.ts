@@ -1,70 +1,106 @@
-
-envConfig
 import { Request, Response, NextFunction } from "express";
-import jwt, { JwtPayload } from "jsonwebtoken";
-import { envConfig } from "../config/env";
+import { prisma } from "../lib/prisma";
 
-const JWT_SECRET = envConfig.JWT_SECRET;
-if (!JWT_SECRET) {
-  throw new Error("JWT_SECRET is not defined");
-}
+import { sendError } from "../utils/apiResponse";
+import { CookieUtils } from "../utils/cookie";
+import { UserRole } from "../../generated/prisma/enums";
+import { Student } from "../../generated/prisma/client";
 
-
-export interface AuthRequest extends Request {
-  user?: {
-    userId: string;
-    role: "STUDENT" | "TUTOR" | "ADMIN";
-  };
-}
 
 export async function authMiddleware(
-  req: AuthRequest,
+  req: Request,
   res: Response,
   next: NextFunction
 ) {
   try {
-    const cookieToken = req.cookies?.token;
+    const sessionToken = 
+      CookieUtils.getCookie(req, "better-auth.session_token") || 
+      (req.headers.authorization?.startsWith("Bearer ") ? req.headers.authorization.split(" ")[1] : null);
+   
 
-    const headerToken = req.headers.authorization?.startsWith("Bearer ")
-      ? req.headers.authorization.split(" ")[1]
-      : null;
-
-    const token = cookieToken || headerToken;
-
-    if (!token) {
-      return res.status(401).json({ error: "Authentication token missing" });
+    if (!sessionToken) {
+      return sendError(res, {
+        message: "Unauthorized: No session token provided",
+        statusCode: 401
+      });
     }
-
-    const payload =  jwt.verify(token, JWT_SECRET) as JwtPayload;
-
-    if (!payload?.userId || !payload?.role) {
-      return res.status(401).json({ error: "Invalid token payload" });
-    }
- 
     
+   const token = sessionToken.split(".")[0];
+    const sessionData = await prisma.session.findUnique({
+      where: {
+        token: token,
+        expiresAt: { gt: new Date() }
+      },
+      
+      include: { user: {
+        include:{admin:true,moderator:true,technician:true,tutorProfile:true,student:true}
+      } }
+    });
+ 
+    if (!sessionData || !sessionData.user) {
+      return sendError(res, {
+        message: "Unauthorized: Invalid or expired session",
+        statusCode: 401
+      });
+    }
+
+    const { user } = sessionData;
 
 
+
+    if (user.status === "BANNED" || user.status === "DELETED" || user.isDeleted) {
+      return sendError(res, {
+        message: `Unauthorized: Account is ${user.status.toLowerCase()}`,
+        statusCode: 403
+      });
+    }
+
+    const now = new Date().getTime();
+    const expiresAt = new Date(sessionData.expiresAt).getTime();
+    const createdAt = new Date(sessionData.createdAt).getTime();
+
+    const totalLifetime = expiresAt - createdAt;
+    const remainingTime = expiresAt - now;
+    const percentRemaining = (remainingTime / totalLifetime) * 100;
+
+    if (percentRemaining < 20) {
+      res.setHeader('X-Session-Refresh', 'true');
+      res.setHeader('X-Session-Expires-At', sessionData.expiresAt.toISOString());
+    }
     req.user = {
-      userId: payload.userId,
-      role: payload.role,
+      userId: user.id, // base user id
+      role: user.role as UserRole,
     };
 
-    next();
-  } catch(error) {
-    console.log("error",error);
-    
-    return res.status(401).json({ error: "Invalid or expired token" });
+
+    res.locals.auth = {
+      userId: user.id,
+      role: user.role,
+      email: user.email,
+    };
+    res.locals.user = user.role === UserRole.USER ? user.student as Student :  user.role === UserRole.MODERATOR ?  user.moderator : user.role === UserRole.TUTOR ? user.tutorProfile :user.role === UserRole.TECHNICIAN ? user.technician : user.admin as any
+
+    return next();
+  } catch (error) {
+    console.error("Auth Middleware Error:", error);
+    return res.status(500).json({
+      success: false,
+      error: "Internal server error during authentication"
+    });
   }
 }
 
-
-export function roleMiddleware(allowedRoles: ("STUDENT" | "TUTOR" | "ADMIN")[]) {
+export function roleMiddleware(allowedRoles: UserRole[]) {
   return (req: Request, res: Response, next: NextFunction) => {
-    const user = (req as any).user;
-   
-    if (!user || !allowedRoles.includes(user.role)) {
-      return res.status(403).json({ error: "Forbidden: Insufficient role" });
+    const auth = req.user 
+    if (!auth || !allowedRoles.includes(auth.role)) {
+      return sendError(res,{
+          errors: true,
+        message: "Forbidden: You do not have permission to perform this action", 
+      statusCode:403
+      })
     }
+
     next();
   };
 }

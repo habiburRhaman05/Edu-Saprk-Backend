@@ -15,7 +15,7 @@ model User {
   accounts           Account[]
   comments Comment[]
   admin              Admin?
-  student    String?
+  student    Student?
   moderator    Moderator?
   technician     Technician?
   tutorProfile    TutorProfile?

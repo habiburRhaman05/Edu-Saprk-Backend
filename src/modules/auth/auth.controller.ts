@@ -1,120 +1,191 @@
-// src/modules/auth/auth.controller.ts
-import { NextFunction, Request, Response } from "express";
-import { authServices } from "./auth.service";
+import type { Request, Response } from "express";
 import { sendSuccess } from "../../utils/apiResponse";
-import { prisma } from "../../lib/prisma";
+import { asyncHandler } from "../../utils/asyncHandler";
+import { authServices } from "./auth.service";
+import { CookieUtils } from "../../utils/cookie";
+import { tokenUtils } from "../../utils/token";
+import { envConfig } from "../../config/env";
+import { AppError } from "../../utils/AppError";
+import { auth } from "../../lib/auth";
+import { statusCodes } from "better-auth/*";
+const isProduction = envConfig.NODE_ENV === "production";
 
 // -------------------- REGISTER --------------------
- const registerController = async (req: Request, res: Response) => {
-  try {
-    console.log(req.body);
-    
-    const { user, token } = await authServices.registerUser(req.body);
+const registerController = asyncHandler(async (req: Request, res: Response) => {
+  const { name, email, password ,role} = req.body;
 
-    res.status(201).json({
-      message: "User registered successfully",
-      user,
-      token,
-    });
-  } catch (error: any) {
-    res.status(400).json({ error: error.message });
-  }
-};
+  const result = await authServices.registerUser({
+    name, email, password,role
+  })
+  return sendSuccess(res, {
+    statusCode: 201,
+    data: result,
+    message: " User Account Created Successfully"
+  })
+});
 
 // -------------------- LOGIN --------------------
- const loginController = async (req: Request, res: Response) => {
-  try {
-    const { user, token } = await authServices.loginUser(req.body);
-const isProd = process.env.NODE_ENV === "production";
+const loginController = asyncHandler(async (req: Request, res: Response) => {
+  const { email, password } = req.body;
+  ;
 
-res.cookie("token", token, {
-  httpOnly: true,
-  secure: isProd,                 // ❗ HTTPS only
-  sameSite: isProd ? "none" : "lax",
-  path: "/",
+  const data = await authServices.loginUser({ email, password })
+
+  tokenUtils.setAccessTokenCookie(res, data.accessToken)
+  tokenUtils.setRefreshTokenCookie(res, data.refreshToken)
+  tokenUtils.setBetterAuthSessionCookie(res, data.sessionToken)
+
+  return sendSuccess(res, {
+    statusCode: 200,
+    data,
+    message: "your are LoggedIn Sucessfully"
+  })
 });
-    res.status(200).json({
-      message: "Login successful",
-      user,
-      token,
-    });
-  } catch (error: any) {
-    res.status(400).json({ error: error.message });
-  }
-};
-    // --------------------  POST LOGOUT CURRENT USER --------------------
-
- const logoutController = async (req: Request, res: Response) => {
-  try {
-
-
- res.clearCookie("token", {
-  httpOnly: true,
-  secure: process.env.NODE_ENV === "production",
-  sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-  path: "/",
+// -------------------- PROFILE DATA --------------------
+const getUserProfileController = asyncHandler(async (req: Request, res: Response) => {
+  const user = await authServices.getCurrentUser(res.locals.auth)
+  return sendSuccess(res, {
+    data: user,
+    message: "Profile Data fetch Successfully"
+  })
 });
 
+// -------------------- LOGOUT --------------------
+const logoutUserController = asyncHandler(async (req: Request, res: Response) => {
 
 
-    return res.status(200).json({
-      message: "Logout successful",
+  const better_auth_session_token = req.cookies["better-auth.session_token"]
+  const refreshToken = req.cookies["refreshToken"]
+
+  const user = await authServices.logoutUser(better_auth_session_token,refreshToken)
+  CookieUtils.clearCookie(res, "accessToken", {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: isProduction ? "none" : "lax",
+    path: '/',
+    maxAge: 15 * 60 * 1000,
+  })
+  CookieUtils.clearCookie(res, "refreshToken", {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: isProduction ? "none" : "lax",
+    path: '/',
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+  })
+  CookieUtils.clearCookie(res, "better-auth.session_token", {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: isProduction ? "none" : "lax",
+    path: '/',
+    maxAge: 24 * 60 * 60 * 1000,
+  })
+  return sendSuccess(res, {
+    statusCode: 200,
+    data: user,
+    message: "User Logout Successfully"
+  })
+});
+// -------------------- CHANGE PASSWORD --------------------
+const changePasswordController = asyncHandler(async (req: Request, res: Response) => {
+
+console.log(req.body);
+
+
+  const better_auth_session_token = req.cookies["better-auth.session_token"];
+
+  const { currentPassword, newPassword } = req.body
+
+  const user = await authServices.changePassword({
+    sessionToken: better_auth_session_token,
+    currentPassword,
+    newPassword
+  })
+
+  console.log("ssuccess");
   
-    });
-  } catch (error: any) {
-    res.status(400).json({ error: error.message });
+  return sendSuccess(res, {
+    statusCode: 200,
+    data: user,
+    message: "Password change Successfully"
+  })
+});
+// -------------------- REFRESH TOKEN --------------------
+const getRefreshTokenController = asyncHandler(async (req: Request, res: Response) => {
+
+
+
+  const refreshToken = req.cookies.refreshToken;
+ 
+  if (!refreshToken) {
+    throw new AppError("Refresh token is missing",statusCodes.UNAUTHORIZED);
   }
-};
+
+  // const  {cookie,token} = req.body;
+  const result = await authServices.getAllNewTokens(refreshToken)
+  // console.log(sessionToken);
+
+  tokenUtils.setAccessTokenCookie(res, result.accessToken)
+  tokenUtils.setRefreshTokenCookie(res, result.refreshToken)
+  tokenUtils.setBetterAuthSessionCookie(res, result.sessionToken)
+
+  return sendSuccess(res, {
+    statusCode: 201,
+    message: "refresh token generate Successfully",
+    data: result
+  })
+});
 
 
-// -------------------- GET CURRENT USER --------------------
- const meController = async (req: Request, res: Response) => {
-  try {
-    // userId injected by auth middleware
-    const user = await authServices.getCurrentUser((req as any).user.userId);
+// --------------------  VERIFY EMAIL --------------------
+const verifyEmail = asyncHandler(async (req, res) => {
+
+  const {email,otp} = req.body;
+   await authServices.verifyEmail({email,otp})
+
+
    return sendSuccess(res,{
-    data:user
+    message:"Your email verification is successfull",
+    statusCode:200
    })
-  } catch (error: any) {
-    res.status(400).json({ error: error.message });
-  }
-};
+ 
+})
 
-
-const handleAvaterChange = async (req:Request,res:Response,next:NextFunction) =>{
-   try {
-
-    const userid = req.user?.userId
-
-     if (!req.file) {
-      return res.status(400).json({ error: "No file uploaded" });
-    }
-
-    const result = req.file as Express.Multer.File & { path: string };
-
-
-    await prisma.user.update({
-      where:{
-        id:userid!
-      },
-      data:{
-        profileAvater:result.path
-      }
-    })
-
-    return sendSuccess(res,{
-      message:"your Profile Avater Upload sucessfully",
-      data:{
-        profileAvater:result.path
-      }
-    })
-
-
+// --------------------  CHANGE AVATAR --------------------
+const changeProfileAvatar = asyncHandler(async (req, res) => {
+        const payload = {
+          profileAvatarUrl:req.body.profileAvatar,
+          userId:res.locals.auth.userId,
+        };
+        console.log(payload);
+        
+        const updatedResult = await authServices.changeAvatar(payload.profileAvatarUrl,payload.userId)
+        console.log("chnage both");
+        
+        return sendSuccess(res,{
+          data:updatedResult,
+          message:"Your Profile Avatar Change Successfully"
+        })
+})
+// --------------------  UPDATE PROFILE --------------------
+const updateProfileInfo = asyncHandler(async (req, res) => {
   
-    
-   } catch (error) {
-    next(error)
-   }
-}
+         const userId =res.locals.auth.userId
+        
+        const updatedResult = await authServices.updateProfile(req.body,userId)
+        return sendSuccess(res,{
+          data:updatedResult,
+          message:"Your Profile Updated Successfully"
+        })
+})
 
-export const authControllers = {registerController,loginController,meController,logoutController,handleAvaterChange}
+
+
+
+
+export const authControllers = {
+  registerController, loginController, getUserProfileController, logoutUserController,
+  changePasswordController,
+  getRefreshTokenController,
+  verifyEmail,
+  updateProfileInfo,changeProfileAvatar,
+};

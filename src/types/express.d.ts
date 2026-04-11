@@ -1,4 +1,4 @@
-import { User } from "../../generated/prisma/client";
+import { Admin, Moderator, Student, Technician, TutorProfile, User, UserRole } from "../../generated/prisma/client";
 
 
 declare global {
@@ -6,9 +6,24 @@ declare global {
     interface Request {
       user?: {
         userId:string;
-        
-        role:"STUDENT"|"TUTOR"|"ADMIN";
-      } 
+        role:UserRole
+      } ,
+      auth: {
+        userId: string;
+        email: string;
+        role: UserRole
+      
+      }
+    }
+     interface Locals {
+    user:CustomerProfile,
+      auth: {
+        userId: string;
+        email: string;
+        role: UserRole
+      }
     }
   }
 }
+
+

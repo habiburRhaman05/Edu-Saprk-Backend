@@ -1,4 +1,4 @@
-import { Role } from "../../../generated/prisma/enums";
+import { UserRole } from "../../../generated/prisma/enums";
 
 export interface TutorProfileCreatePayload {
   bio: string;
@@ -41,7 +41,7 @@ export interface TutorProfileResponse {
     name: string;
     email: string;
     profileAvater: string
-    role: Role;
+    role: UserRole;
     status: string;
     location: string;
     phoneNumber: string;
