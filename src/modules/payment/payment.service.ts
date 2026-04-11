@@ -264,18 +264,34 @@ const getPaymentDetails = async (id) => {
   })
   return payment
 }
-const getUserPaymentHistory = async (id) => {
+const getUserPaymentHistory = async (id,query: any) => {
   console.log(id);
+ const page = Number(query.page) || 1
+  const limit = Number(query.limit) || 10
+  const skip = (page - 1) * limit
 
   const payments = await prisma.payment.findMany({
     where: {
       userId: id
     },
 
-    include: { user: true }
-  })
+    include: { user: true },
+    orderBy:{createdAt:"desc"},
+    skip:skip,
+    take:limit
+  });
 
-  return payments
+  const paymentsCount = await prisma.payment.count()
+
+
+  return {
+   meta:{
+     totalPages:paymentsCount,
+   },
+   paymentsList:payments
+
+
+  }
 }
 
 export const paymentServices = { handleStripePaymentSuccess, generateAndSendInvoice, createBokingPurchaseSession, getAllTransactions, getPaymentDetails, getUserPaymentHistory }

@@ -1,3 +1,4 @@
+import { BookingStatus } from "../../generated/prisma/enums";
 import { prisma } from "../../lib/prisma";
 import { AppError } from "../../utils/AppError";
 import { authServices } from "../auth/auth.service";
@@ -60,15 +61,21 @@ const createBooking = async (
 };
 
 
-const getAllBookings = async (userId: string) => {
+const getAllBookings = async (userId: string,{page,status}:{page:string,status:BookingStatus}) => {
+
+
+  const limit = 10;
+  const skip = (Number(page) -1) * limit;
+
 
   const bookings = await prisma.booking.findMany({
-    where: { studentId: userId},
+    where: { studentId: userId,status:status},
     include:{
-      
       review:true
     },
     orderBy: { dateTime: "asc" },
+    skip:skip,
+    take:limit
   });
 
 

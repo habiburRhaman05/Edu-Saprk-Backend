@@ -7,7 +7,7 @@ import { UserRole } from "../../generated/prisma/enums";
 
 const paymentRouter = Router();
 
-// ✅ Buy credits (User)
+
 paymentRouter.post(
   "/generate-session",
   authMiddleware, 
@@ -15,20 +15,20 @@ paymentRouter.post(
   validateRequest(buyCreditSchema),
   buyCredits
 );
-// ✅ Buy credits (User)
+
 paymentRouter.get(
   "/get-all-transactions",
   authMiddleware, 
   roleMiddleware([UserRole.ADMIN]),
   getAllTransactions
 );
-// ✅ Buy credits (User)
+
 paymentRouter.get(
   "/:id",
   authMiddleware, 
   getPaymentDetails
 );
-// ✅ Buy credits (User)
+
 paymentRouter.get(
   "/user/:userId/transactions",
   authMiddleware, 

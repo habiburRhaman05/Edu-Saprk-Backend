@@ -38,13 +38,12 @@ const getKPISData = async () => {
     prisma.booking.count(),
     prisma.booking.count({ where: { status: "COMPLETED" } }),
     prisma.user.findMany({
-      where: { location: { not: null } },
-      select: { location: true },
+     
     }),
   ]);
 
   const totalSubjects = new Set(tutorSubjects.flatMap(t => t.subjects)).size;
-  const totalCountries = new Set(usersWithLocation.map(u => u.location)).size;
+  const totalCountries = new Set(usersWithLocation.map(u => u)).size;
   const successRate =
     totalBookings === 0 ? 0 : Math.round((completedBookings / totalBookings) * 100);
 

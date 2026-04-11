@@ -131,13 +131,13 @@ const loginUser = async (payload: ILoginUserPayload) => {
 
 // -------------------- GET CURRENT USER --------------------
     const getCurrentUser = async (user: IRequestUser) => {
-  const cacheKey = getProfileCacheKey(user.userId, user.role)
+  const cacheKey = getProfileCacheKey(user.id, user.role)
 
   const cached = await redis.get(cacheKey);
   if (cached) return JSON.parse(cached);
   const baseUser = await prisma.user.findUnique({
     where: {
-      id: user.userId
+      id: user.id
     },
     include: { admin: true, student: true ,moderator:true,tutorProfile:true,technician:true}
   });

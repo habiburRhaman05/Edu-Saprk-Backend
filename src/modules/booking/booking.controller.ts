@@ -20,8 +20,12 @@ next(error)
 
 const getAllBookings  = async (req:Request,res:Response,next:NextFunction)=>{
   try {
-    const studentId = req.user?.userId!
-    const bookings = await bookingServices.getAllBookings(studentId);
+    const studentId = req.user?.userId!;
+    const {page,status} = req.query
+
+
+
+    const bookings = await bookingServices.getAllBookings(studentId,{page,status});
     return sendSuccess(res,{
       statusCode:200,
       message:"your bookings fetch successfully",

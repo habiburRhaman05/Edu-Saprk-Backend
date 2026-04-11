@@ -52,7 +52,7 @@ export const buyCredits = asyncHandler(async (req: Request, res: Response) => {
 console.log(userId);
 
   const paymentLists = await paymentServices.getUserPaymentHistory(
-   userId as string
+   userId as string,req.query
   );
 
   return sendSuccess(res, {
