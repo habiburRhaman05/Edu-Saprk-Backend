@@ -1,5 +1,5 @@
 
-import { UserStatus } from "../../../generated/prisma/enums";
+import { UserStatus } from "../../generated/prisma/enums";
 import { prisma } from "../../lib/prisma";
 import bcrypt from "bcrypt";
 import { startOfMonth, endOfMonth } from "date-fns";

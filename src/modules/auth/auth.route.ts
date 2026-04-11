@@ -8,7 +8,7 @@ import { authSchemas } from "./auth.schema";
 import { studentSchemas } from "../student/student.schema";
 import { studentController } from "../student/student.controller";
 import { upload } from "../upload/upload-image.service";
-import { UserRole } from "../../../generated/prisma/enums";
+import { UserRole } from "../../generated/prisma/enums";
 
 
 const router:Router = Router();

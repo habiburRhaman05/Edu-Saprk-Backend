@@ -1,6 +1,6 @@
 
-import { Prisma } from "../../../generated/prisma/client";
-import { UserRole, UserStatus } from "../../../generated/prisma/enums";
+import { Prisma } from "../../generated/prisma/client";
+import { UserRole, UserStatus } from "../../generated/prisma/enums";
 import { redis } from "../../config/redis";
 import { auth } from "../../lib/auth";
 import { prisma } from "../../lib/prisma";

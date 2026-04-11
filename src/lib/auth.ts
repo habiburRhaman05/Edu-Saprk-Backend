@@ -4,7 +4,7 @@ import { prismaAdapter } from "better-auth/adapters/prisma";
 import { bearer, emailOTP } from "better-auth/plugins";
 import { envConfig } from "../config/env";
 import { prisma } from "./prisma";
-import { UserRole, UserStatus } from "../../generated/prisma/enums";
+import { UserRole, UserStatus } from "../generated/prisma/enums";
 
 const isProduction = process.env.NODE_ENV === "production";
 export const auth = betterAuth({

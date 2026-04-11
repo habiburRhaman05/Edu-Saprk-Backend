@@ -3,7 +3,7 @@ import { Router } from "express";
 import { authMiddleware, roleMiddleware } from "../../middleware/auth-middlewares";
 import { sendSuccess } from "../../utils/apiResponse";
 import { multerUploader } from "../../config/multer.config";
-import { UserRole } from "../../../generated/prisma/enums";
+import { UserRole } from "../../generated/prisma/enums";
 
 const mediaRouter = Router();
 

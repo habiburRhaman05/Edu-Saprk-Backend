@@ -8,7 +8,7 @@ import { generatePaymentInvoiceBuffer } from "./payment.utils";
 import { envConfig } from "../../config/env";
 import { getProfileCacheKey } from "../auth/auth.service";
 import { redis } from "../../config/redis";
-import { PaymentStatus, UserRole } from "../../../generated/prisma/enums";
+import { PaymentStatus, UserRole } from "../../generated/prisma/enums";
 import { stripe } from "../../config/stripe";
 import { emailQueue } from "../../queue/emailQueue";
 

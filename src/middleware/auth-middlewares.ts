@@ -3,8 +3,8 @@ import { prisma } from "../lib/prisma";
 
 import { sendError } from "../utils/apiResponse";
 import { CookieUtils } from "../utils/cookie";
-import { UserRole } from "../../generated/prisma/enums";
-import { Student } from "../../generated/prisma/client";
+import { UserRole } from "../generated/prisma/enums";
+import { Student } from "../generated/prisma/client";
 
 
 export async function authMiddleware(

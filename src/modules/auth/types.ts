@@ -1,4 +1,4 @@
-import { Role } from "../../../generated/prisma/enums";
+import { Role } from "../../generated/prisma/enums";
 import { TutorProfileResponse } from "../tutor/types";
 
 export type RegisterPayload = {

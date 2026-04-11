@@ -1,4 +1,4 @@
-import { Admin, Moderator, Student, Technician, TutorProfile, User, UserRole } from "../../generated/prisma/client";
+import { Admin, Moderator, Student, Technician, TutorProfile, User, UserRole } from "../generated/prisma/client";
 
 
 declare global {

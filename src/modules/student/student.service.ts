@@ -7,7 +7,7 @@ import { AppError } from "../../utils/AppError";
 import { StudentProfileUpdate } from "./types";
 
 import bcrypt from "bcrypt"
-import { BookingStatus, PaymentStatus, UserRole, UserStatus } from "../../../generated/prisma/enums";
+import { BookingStatus, PaymentStatus, UserRole, UserStatus } from "../../generated/prisma/enums";
 
 const  getProfile= async (userId: string) => {
     return await prisma.user.findUnique({

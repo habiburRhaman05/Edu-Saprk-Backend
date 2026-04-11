@@ -1,5 +1,5 @@
 // src/modules/tutor/tutor.service.ts
-import { Prisma } from "../../../generated/prisma/client";
+import { Prisma } from "../../generated/prisma/client";
 import { prisma } from "../../lib/prisma";
 import { AppError } from "../../utils/AppError";
 import { authServices } from "../auth/auth.service";

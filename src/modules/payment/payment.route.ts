@@ -3,7 +3,7 @@ import { buyCredits, getAllTransactions, getPaymentDetails, getUserPaymentHistor
 import { authMiddleware, roleMiddleware } from "../../middleware/auth-middlewares";
 import { validateRequest } from "../../middleware/validateRequest";
 import { buyCreditSchema } from "./payment.validation";
-import { UserRole } from "../../../generated/prisma/enums";
+import { UserRole } from "../../generated/prisma/enums";
 
 const paymentRouter = Router();
 
