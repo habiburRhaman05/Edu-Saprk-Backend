@@ -2,6 +2,7 @@
 import { NextFunction, Request, Response } from "express";
 import { studentService } from "./student.service";
 import { sendSuccess } from "../../utils/apiResponse";
+import { asyncHandler } from "../../utils/asyncHandler";
  const getProfile= async (req: Request, res: Response,next:NextFunction) => {
     try {
       const user = await studentService.getProfile(req.user!.userId);
@@ -81,6 +82,19 @@ import { sendSuccess } from "../../utils/apiResponse";
       next(error)
     }
   }
+  const getStudentdashboardData = async (req:Request,res:Response,next:NextFunction)=>{
+    try {
+      const userId =  res.locals.user.id
+      const stats = await studentService.getAllStudentDashboardData(userId!);
+      return sendSuccess(res,{
+        statusCode:200,
+        data:stats,
+        message:"fetch student dashboard data successfully"
+      })
+    } catch (error) {
+      next(error)
+    }
+  }
   const saveTutor = async (req:Request,res:Response,next:NextFunction)=>{
     try {
       const tutorId =  req.params?.TutorId as string
@@ -99,6 +113,8 @@ import { sendSuccess } from "../../utils/apiResponse";
 
 
 
+
+
 export const studentController = {
- getProfile,updateProfile,deleteAccount,getStudentdashboardStats,updateProfileAvater,saveTutor
+ getProfile,updateProfile,deleteAccount,getStudentdashboardStats,updateProfileAvater,saveTutor,getStudentdashboardData
 };

@@ -7,6 +7,7 @@ import { AppError } from "../../utils/AppError";
 import { StudentProfileUpdate } from "./types";
 
 import bcrypt from "bcrypt"
+import { BookingStatus, PaymentStatus, UserRole, UserStatus } from "../../../generated/prisma/enums";
 
 const  getProfile= async (userId: string) => {
     return await prisma.user.findUnique({
@@ -70,12 +71,123 @@ console.log(userId);
 return {totalBooking,totalReview}
 };
 
+ async function getStudentDashboardSummary(studentId: string) {
+  const [
+    upcomingSessions,
+    completedSessions,
+    savedTutorsCount,
+    paymentAgg,
+  ] = await Promise.all([
+    prisma.booking.count({
+      where: {
+        studentId,
+        status: BookingStatus.CONFIRMED,
+        dateTime: { gte: new Date() },
+      },
+    }),
+    prisma.booking.count({
+      where: {
+        studentId,
+        status: BookingStatus.COMPLETED,
+      },
+    }),
+    prisma.tutorProfile.count({
+      where: {
+        bookings: { some: { studentId } },
+      },
+    }),
+    prisma.payment.aggregate({
+      _sum: { amount: true },
+      where: {
+        userId: studentId,
+        status: PaymentStatus.SUCCESS,
+      },
+    }),
+  ]);
+
+  return {
+    upcomingSessions,
+    completedSessions,
+    savedTutorsCount,
+    totalSpent: paymentAgg._sum.amount || 0,
+  };
+}
+
+ async function getStudentDashboardCharts(studentId: string) {
+  const [payments, sessionHistory] = await Promise.all([
+    prisma.payment.findMany({
+      where: { userId: studentId, status: PaymentStatus.SUCCESS },
+      select: { amount: true, createdAt: true },
+      orderBy: { createdAt: 'asc' },
+    }),
+    prisma.booking.findMany({
+      where: { studentId },
+      select: { createdAt: true, status: true },
+      orderBy: { createdAt: 'asc' },
+    }),
+  ]);
+
+  return {
+    paymentTrend: payments,
+    learningProgress: sessionHistory,
+  };
+}
+
+
+ async function getStudentDashboardDetails(studentId: string) {
+  const [recentSessions, recentPayments, recommendedTutors] = await Promise.all([
+    prisma.booking.findMany({
+      where: { studentId },
+      include: {
+        tutor: {
+          include: { user: true },
+        },
+      },
+      orderBy: { dateTime: 'desc' },
+      take: 5,
+    }),
+    prisma.payment.findMany({
+      where: { userId: studentId },
+      orderBy: { createdAt: 'desc' },
+      take: 5,
+    }),
+    prisma.tutorProfile.findMany({
+      take: 6,
+      include: { user: true },
+      orderBy: { createdAt: 'desc' },
+    }),
+  ]);
+
+  return {
+    recentSessions,
+    recentPayments,
+    recommendedTutors,
+  };
+}
+
+
+ async function getAllStudentDashboardData(studentId: string) {
+  const [summary, charts, details] = await Promise.all([
+    getStudentDashboardSummary(studentId),
+    getStudentDashboardCharts(studentId),
+    getStudentDashboardDetails(studentId),
+  ]);
+
+  return {
+    summary,
+    charts,
+    details,
+  };
+}
+
+
+
 
 export const studentService = {
  getProfile,
  updateProfile,deleteAccount,
 getStudentStatsData,
-
+getAllStudentDashboardData,
 savedTutor
  
 };
