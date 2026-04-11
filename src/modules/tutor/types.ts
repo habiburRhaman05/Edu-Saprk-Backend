@@ -6,6 +6,7 @@ export interface TutorProfileCreatePayload {
   subjects: string[];
   hourlyRate: number;
   categoryId: string;
+  name: string;
   experience: string;
   category: string;
   availability: string[];

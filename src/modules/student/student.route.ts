@@ -13,6 +13,8 @@ router.put("/profile",authMiddleware,roleMiddleware(["STUDENT"]), studentControl
 router.post("/profile/avater-change",authMiddleware,roleMiddleware(["STUDENT"]), studentController.updateProfile);
 router.get("/:id/dashboard/stats",authMiddleware,roleMiddleware(["STUDENT"]),studentController.getStudentdashboardStats);
 
+router.post("/savedTutor/:tutorId",authMiddleware,roleMiddleware(["STUDENT"]),studentController.saveTutor);
+
  
 
 

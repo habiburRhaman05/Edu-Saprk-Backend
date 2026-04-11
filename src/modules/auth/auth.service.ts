@@ -8,7 +8,7 @@ import { AppError } from "../../utils/AppError";
 import { tokenUtils } from "../../utils/token";
 import { IChangePassword, ILoginUserPayload, IRegisterPayload, IRequestUser } from "./auth.interface";
 
-import { statusCodes } from "better-auth/*";
+import { StatusCodes } from 'http-status-codes';
 import { PROFILE_CACHE_EXPIRE } from "../../config/cacheKeys";
 import { jwtUtils } from "../../utils/jwt";
 import { envConfig } from "../../config/env";
@@ -67,7 +67,7 @@ const registerUser = async (payload: IRegisterPayload) => {
 //     throw new Error("Invalid credentials");
 //   }
 
-//   if (user.status === UserstatusCodes.BANNED) {
+//   if (user.status === StatusCodes.BANNED) {
 //     throw new Error("User is banned");
 //   }
 
@@ -104,10 +104,10 @@ const loginUser = async (payload: ILoginUserPayload) => {
   console.log(data);
 
   if (data.user.status === UserStatus.BANNED)
-    throw new AppError("User is blocked", statusCodes.FORBIDDEN);
+    throw new AppError("User is blocked", StatusCodes.FORBIDDEN);
 
   if (data.user.isDeleted || data.user.status === UserStatus.DELETED)
-    throw new AppError("User is deleted", statusCodes.NOT_FOUND);
+    throw new AppError("User is deleted", StatusCodes.NOT_FOUND);
 
   const accessTokenPayload = {
     userId: data.user.id,
@@ -150,7 +150,7 @@ const loginUser = async (payload: ILoginUserPayload) => {
     });
 
     if (!admin)
-      throw new AppError("User not found", statusCodes.NOT_FOUND);
+      throw new AppError("User not found", StatusCodes.NOT_FOUND);
 
     await redis.set(
       cacheKey,
@@ -168,7 +168,7 @@ const loginUser = async (payload: ILoginUserPayload) => {
     });
 
     if (!moderator)
-      throw new AppError("User not found", statusCodes.NOT_FOUND);
+      throw new AppError("User not found", StatusCodes.NOT_FOUND);
 
     await redis.set(
       cacheKey,
@@ -186,7 +186,7 @@ const loginUser = async (payload: ILoginUserPayload) => {
     });
 
     if (!tutor)
-      throw new AppError("User not found", statusCodes.NOT_FOUND);
+      throw new AppError("User not found", StatusCodes.NOT_FOUND);
 
     await redis.set(
       cacheKey,
@@ -205,7 +205,7 @@ const loginUser = async (payload: ILoginUserPayload) => {
     });
 
     if (!technician)
-      throw new AppError("User not found", statusCodes.NOT_FOUND);
+      throw new AppError("User not found", StatusCodes.NOT_FOUND);
 
     await redis.set(
       cacheKey,
@@ -222,7 +222,7 @@ const loginUser = async (payload: ILoginUserPayload) => {
     });
 
     if (!studentProfile)
-      throw new AppError("User not found", statusCodes.NOT_FOUND);
+      throw new AppError("User not found", StatusCodes.NOT_FOUND);
 
     await redis.set(
       cacheKey,
@@ -342,7 +342,7 @@ const updateProfile = async (updatedData: any, userId: string) => {
     include: { admin: true, student: true,tutorProfile:true,moderator:true,technician:true }
   });
 
-  if (!user) throw new AppError("User not found", statusCodes.NOT_FOUND);
+  if (!user) throw new AppError("User not found", StatusCodes.NOT_FOUND);
 
   const isAdmin = user.role === UserRole.ADMIN
   const isTutor = user.role === UserRole.TUTOR
@@ -396,6 +396,7 @@ const updateProfile = async (updatedData: any, userId: string) => {
       return await ts.tutorProfile.update({
         where: { userId: userId },
         data: {
+          name: updatedData.name || user.tutorProfile?.name,
           bio: updatedData.bio || user.tutorProfile?.bio,
           experience: updatedData.experience || user.tutorProfile?.experience,
           hourlyRate: updatedData.hourlyRate || user.tutorProfile?.hourlyRate,
@@ -581,7 +582,7 @@ const getAllNewTokens = async (
 
 
   if (!verifiedRefreshToken.success && verifiedRefreshToken.error) {
-    throw new AppError("Invalid refresh token", statusCodes.UNAUTHORIZED);
+    throw new AppError("Invalid refresh token", StatusCodes.UNAUTHORIZED);
   }
 
   const data = verifiedRefreshToken.data as JwtPayload;
@@ -597,7 +598,7 @@ const getAllNewTokens = async (
   })
 
   if (!isSessionTokenExists) {
-    throw new AppError("Invalid session token", statusCodes.UNAUTHORIZED);
+    throw new AppError("Invalid session token", StatusCodes.UNAUTHORIZED);
   }
 
   const newAccessToken = tokenUtils.getAccessToken({

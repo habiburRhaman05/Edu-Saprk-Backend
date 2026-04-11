@@ -20,7 +20,8 @@ const createTutorProfile = async (userId: string, payload: TutorProfileCreatePay
       categoryId: payload.categoryId,
       category: payload.category,
       experience: payload.experience,
-      profileAvatar:""
+      profileAvatar:"",
+      name:payload.name
     },
   });
   return profile;

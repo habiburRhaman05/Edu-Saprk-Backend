@@ -17,6 +17,7 @@ model Student {
   updatedAt       DateTime      @updatedAt
   studentBookings Booking[]     @relation("StudentBookings")
   reviewsGiven    Review[]      @relation("StudentReviews")
+  savedTutors     String[] 
   transactions Payment[]
     user         User           @relation(fields: [userId], references: [id])
 }

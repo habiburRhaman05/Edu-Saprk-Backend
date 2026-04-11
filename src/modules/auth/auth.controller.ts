@@ -7,7 +7,7 @@ import { tokenUtils } from "../../utils/token";
 import { envConfig } from "../../config/env";
 import { AppError } from "../../utils/AppError";
 import { auth } from "../../lib/auth";
-import { statusCodes } from "better-auth/*";
+import { StatusCodes } from 'http-status-codes';
 const isProduction = envConfig.NODE_ENV === "production";
 
 // -------------------- REGISTER --------------------
@@ -117,7 +117,7 @@ const getRefreshTokenController = asyncHandler(async (req: Request, res: Respons
   const refreshToken = req.cookies.refreshToken;
  
   if (!refreshToken) {
-    throw new AppError("Refresh token is missing",statusCodes.UNAUTHORIZED);
+    throw new AppError("Refresh token is missing",StatusCodes.UNAUTHORIZED);
   }
 
   // const  {cookie,token} = req.body;

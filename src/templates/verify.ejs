@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Email Verification - Blitz Analyzer</title>
+
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #f4f7fb;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: 40px auto;
+      background: #ffffff;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid #e2e8f0;
+    }
+
+    /* Header */
+    .header {
+      padding: 24px;
+      text-align: center;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    .brand {
+      font-size: 20px;
+      font-weight: 700;
+      color: #0f172a;
+    }
+
+    .tagline {
+      font-size: 12px;
+      color: #64748b;
+      margin-top: 4px;
+    }
+
+    /* Content */
+    .content {
+      padding: 30px;
+      color: #334155;
+    }
+
+    .badge {
+      display: inline-block;
+      background: #eff6ff;
+      color: #2563eb;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 6px 10px;
+      border-radius: 999px;
+      margin-bottom: 15px;
+    }
+
+    h2 {
+      margin: 0 0 10px;
+      font-size: 22px;
+      color: #0f172a;
+    }
+
+    p {
+      font-size: 14px;
+      line-height: 1.6;
+      margin: 10px 0;
+    }
+
+    /* OTP Box */
+    .otp-box {
+      text-align: center;
+      margin: 25px 0;
+    }
+
+    .otp {
+      display: inline-block;
+      background: #0f172a;
+      color: #ffffff;
+      font-size: 28px;
+      letter-spacing: 6px;
+      padding: 14px 24px;
+      border-radius: 8px;
+      font-weight: 700;
+    }
+
+    .expiry {
+      font-size: 12px;
+      color: #ef4444;
+      margin-top: 10px;
+    }
+
+    /* Info Box */
+    .box {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      padding: 16px;
+      border-radius: 8px;
+      margin: 20px 0;
+      font-size: 13px;
+    }
+
+    /* Footer */
+    .footer {
+      text-align: center;
+      font-size: 12px;
+      color: #94a3b8;
+      padding: 20px;
+      border-top: 1px solid #e2e8f0;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+
+    <!-- Header -->
+    <div class="header">
+      <div class="brand">Blitz Analyzer</div>
+      <div class="tagline">Ultimate Resume Builder</div>
+    </div>
+
+    <!-- Content -->
+    <div class="content">
+
+      <div class="badge">Email Verification</div>
+
+      <h2>Verify your email address</h2>
+
+      <p>Hi <strong><%= user.name %></strong>,</p>
+
+      <p>
+        Welcome to Blitz Analyzer! To complete your account setup, please use the verification code below.
+      </p>
+
+      <!-- OTP -->
+      <div class="otp-box">
+        <div class="otp"><%= otp %></div>
+        <div class="expiry">Expires in <%= expiryMinutes %> minutes</div>
+      </div>
+
+      <div class="box">
+        <p>
+          For security reasons, do not share this code with anyone. Blitz Analyzer will never ask for your OTP.
+        </p>
+      </div>
+
+      <p>
+        If you did not request this, you can safely ignore this email.
+      </p>
+
+      <p>
+        — Blitz Analyzer Team
+      </p>
+      <p>
+        Founder — Habibur Rahman | Software Engineer
+      </p>
+
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      © <%= new Date().getFullYear() %> Blitz Analyzer. All rights reserved.
+    </div>
+
+  </div>
+</body>
+</html>

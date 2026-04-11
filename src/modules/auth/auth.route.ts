@@ -20,6 +20,6 @@ router.put("/profile/change-avater",authMiddleware,roleMiddleware([UserRole.STUD
 router.put("/profile/update",authMiddleware,roleMiddleware([UserRole.STUDENT,UserRole.TUTOR,UserRole.ADMIN,UserRole.MODERATOR,UserRole.TECHNICIAN]),upload.single("file"), authControllers.updateProfileInfo);
 router.post("/logout", authMiddleware, authControllers.logoutUserController);
 //  ============== FOR STUDENT/USER AND TUTOR BOTH CAN USE IT ==============
-router.put("/change-password",authMiddleware, validateRequest(studentSchemas.changePasswordSchema), studentController.changePassword);
+router.put("/change-password",authMiddleware, validateRequest(studentSchemas.changePasswordSchema), authControllers.changePasswordController);
 router.delete("/delete-account",authMiddleware,roleMiddleware([UserRole.STUDENT,UserRole.TUTOR]), studentController.deleteAccount);
 export default router;

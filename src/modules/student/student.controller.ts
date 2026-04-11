@@ -48,19 +48,6 @@ import { sendSuccess } from "../../utils/apiResponse";
 
     }
   }
-  const changePassword=async (req: Request, res: Response,next:NextFunction) => {
-    try {
-      const { oldPassword, newPassword } = req.body;
-      const result = await studentService.changePassword(req.user!.userId, oldPassword, newPassword);
-     return sendSuccess(res,{
-        statusCode:200,
-        message:"password change successfully",
-      })
-    } catch (err: any) {
-           next(err)
-
-    }
-  }
 
   const deleteAccount= async (req: Request, res: Response,next:NextFunction) => {
     try {
@@ -94,7 +81,24 @@ import { sendSuccess } from "../../utils/apiResponse";
       next(error)
     }
   }
+  const saveTutor = async (req:Request,res:Response,next:NextFunction)=>{
+    try {
+      const tutorId =  req.params?.TutorId as string
+
+      
+      const stats = await studentService.savedTutor(tutorId!,res.locals.user.id);
+      return sendSuccess(res,{
+        statusCode:200,
+        data:stats,
+        message:"tutor saved successfully"
+      })
+    } catch (error) {
+      next(error)
+    }
+  }
+
+
 
 export const studentController = {
- getProfile,updateProfile,changePassword,deleteAccount,getStudentdashboardStats,updateProfileAvater
+ getProfile,updateProfile,deleteAccount,getStudentdashboardStats,updateProfileAvater,saveTutor
 };
