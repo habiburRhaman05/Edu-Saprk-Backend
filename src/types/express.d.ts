@@ -16,7 +16,7 @@ declare global {
       }
     }
      interface Locals {
-    user:CustomerProfile,
+    user:Student | Admin | TutorProfile | Moderator | Technician,
       auth: {
         userId: string;
         email: string;

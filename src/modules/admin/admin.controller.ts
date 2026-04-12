@@ -1,6 +1,8 @@
 import { NextFunction, Request, Response } from "express";
 import { adminServices } from "./admin.service";
 import { sendSuccess } from "../../utils/apiResponse";
+import { asyncHandler } from "../../utils/asyncHandler";
+import { prisma } from "../../lib/prisma";
 
 const getProfile = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -17,8 +19,14 @@ const getProfile = async (req: Request, res: Response, next: NextFunction) => {
 const getAllUsers = async (req: Request, res: Response, next: NextFunction) => {
   try {
     console.log("main user",req.user);
+    const filters = {
+      page:req.query.page,
+      status:req.query.status,
+      search:req.query.q
+    }
+    console.log("filter",filters);
     
-    const users = await adminServices.getAllUsers();
+    const users = await adminServices.getAllUsers(filters);
     return sendSuccess(res, {
       statusCode: 200,
       message: "All users fetched successfully",
@@ -121,6 +129,29 @@ const getDashboardData = async (req: Request, res: Response, next: NextFunction)
   }
 };
 
+
+export const getAdminDashboardData = asyncHandler(async (req, res) => {
+  //  const now = new Date();
+  //   const startOfCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  //   const startOfPrevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  //   const startOfYear = new Date(now.getFullYear(), 0, 1);
+  //   const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay() + 1));
+
+  //   // Execute all 3 steps in parallel for maximum performance
+  //   const [kpiCards, charts, recentBookings] = await Promise.all([
+  //     adminServices.getCardData(prisma, startOfCurrentMonth, startOfPrevMonth),
+  //     adminServices.getChartData(prisma, startOfWeek, startOfYear),
+  //     adminServices.getListingData(prisma)
+  //   ]);
+
+  const result = await adminServices.getRequestData()
+
+   return sendSuccess(res,{
+    data:result
+   })
+})
+
+
 export const adminControllers = {
   getProfile,
 getAllBookings,
@@ -128,5 +159,5 @@ getAllBookings,
   updateUserStatus,
   createNewCategory,
   updateCategory,deleteCategory,
-  getDashboardData
+  getAdminDashboardData
 };

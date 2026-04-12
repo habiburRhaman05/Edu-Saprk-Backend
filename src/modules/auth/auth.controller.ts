@@ -43,7 +43,9 @@ const loginController = asyncHandler(async (req: Request, res: Response) => {
 });
 // -------------------- PROFILE DATA --------------------
 const getUserProfileController = asyncHandler(async (req: Request, res: Response) => {
-  const user = await authServices.getCurrentUser(res.locals.user)
+  console.log(res.locals.user);
+  
+  const user = await authServices.getCurrentUser(res.locals.auth)
   return sendSuccess(res, {
     data: user,
     message: "Profile Data fetch Successfully"

@@ -17,7 +17,6 @@ router.post("/generate", async (req: Request, res: Response) => {
 
   try {
     const result = await generateContent(parsed.data);
-
     return res.status(200).json(result);
   } catch (error: any) {
     return res.status(500).json({

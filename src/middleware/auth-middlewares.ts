@@ -46,6 +46,7 @@ export async function authMiddleware(
 
     const { user } = sessionData;
 
+console.log(user);
 
 
     if (user.status === "BANNED" || user.status === "DELETED" || user.isDeleted) {
@@ -79,6 +80,7 @@ export async function authMiddleware(
       email: user.email,
     };
     res.locals.user = user.role === UserRole.USER ? user.student as Student :  user.role === UserRole.MODERATOR ?  user.moderator : user.role === UserRole.TUTOR ? user.tutorProfile :user.role === UserRole.TECHNICIAN ? user.technician : user.admin as any
+console.log(res.locals.user);
 
     return next();
   } catch (error) {

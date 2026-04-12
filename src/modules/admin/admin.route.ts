@@ -19,7 +19,7 @@ router.post("/categories",validateRequest(adminSchemas.createCategorySchema), ad
 router.delete("/categories/:categoryId", adminControllers.deleteCategory);
 router.patch("/categories/:categoryId", adminControllers.updateCategory);
 router.get("/bookings", adminControllers.getAllBookings);
-router.get("/get-dashboard-data", adminControllers.getDashboardData);
+router.get("/get-dashboard-data", adminControllers.getAdminDashboardData);
 
 router.patch("/users/:id/status", adminControllers.updateUserStatus);
 
