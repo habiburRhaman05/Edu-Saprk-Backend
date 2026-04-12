@@ -117,10 +117,11 @@ console.log(result);
   // -------------------- PUT MARKD SESSION FINISH  --------------------
  const markdSessionFinishController = async (req: Request, res: Response,next:NextFunction) => {
     try {
-      const {tutorId,status} = req.body
-      const sessionId = req.params.sessionId as string
+      const tutor = res.locals.user as { id: string };
+      const sessionId = req.params.sessionId as string;
+      const { status } = req.body;
 
-      const updateSession = await tutorServices.markdSessionFinish(tutorId,sessionId,status);
+      const updateSession = await tutorServices.markdSessionFinish(tutor.id, sessionId, status);
       sendSuccess(res,{
         message:"session marked sucessfully",
         data:updateSession
@@ -129,6 +130,19 @@ console.log(result);
      next(error)
     }
   }
+
+  const getTutorEarningsController = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const userId = req.user?.userId!;
+      const data = await tutorServices.getTutorEarnings(userId);
+      sendSuccess(res, {
+        message: "Earnings fetched successfully",
+        data,
+      });
+    } catch (error: any) {
+      next(error);
+    }
+  };
   // -------------------- GET ALL TUTORS LIST CONTROLLER  --------------------
 
  const gettingAllTutorsLists = async (req: Request, res: Response,next:NextFunction) => {
@@ -191,11 +205,22 @@ console.log(result);
     // ২. সার্ভিস কল করা
     const dashboardData = await tutorServices.tutorDashboardData(tutorId as string);
 
-    // ৩. যদি টিউটর প্রোফাইল না পাওয়া যায়
     if (!dashboardData.tutorData) {
-      return res.status(404).json({
-        success: false,
-        message: "Tutor profile not found!",
+      return res.status(200).json({
+        success: true,
+        message: "Profile incomplete",
+        data: {
+          profile: {
+            name: user.name,
+            totalSessions: 0,
+            avgRating: 0,
+            totalReviews: 0,
+          },
+          upcomingSessions: [],
+          availability: [],
+          recentFeedback: null,
+          profileIncomplete: true
+        }
       });
     }
 
@@ -248,6 +273,5 @@ console.log(result);
     getTutorProfileDetails,
    getAllAvailabilitys,
    getTutorDashboard,
-  
-   
+   getTutorEarningsController,
  }

@@ -1,131 +1,120 @@
-import { BookingStatus } from "../../generated/prisma/enums";
+import { BookingStatus, PaymentStatus } from "../../generated/prisma/enums";
+import { Prisma } from "../../generated/prisma/client";
 import { prisma } from "../../lib/prisma";
 import { AppError } from "../../utils/AppError";
-import { authServices } from "../auth/auth.service";
-
+import { envConfig } from "../../config/env";
+import { paymentServices } from "../payment/payment.service";
 
 interface CreateBookingPayload {
   tutorId: string;
   availabilityId: string;
 }
 
-const createBooking = async (
-  studentId: string,
-  payload: CreateBookingPayload
-) => {
+const createBooking = async (studentId: string, payload: CreateBookingPayload) => {
   const { tutorId, availabilityId } = payload;
 
-  //  Check availability slot
   const availability = await prisma.availability.findUnique({
     where: { id: availabilityId },
   });
 
   if (!availability) {
-    throw new AppError(
-      "Availability slot not found"
-    );
+    throw new AppError("Availability slot not found", 404);
   }
 
   if (availability.isBooked) {
-    throw new AppError(
-      "This slot is already booked"
-    );
+    throw new AppError("This slot is already booked", 400);
   }
 
   if (availability.tutorId !== tutorId) {
-    throw new AppError(
-      "Tutor mismatch with availability"
-    );
+    throw new AppError("Tutor mismatch with availability", 400);
   }
 
+  const newBooking = await prisma.booking.create({
+    data: {
+      studentId,
+      tutorId,
+      dateTime: availability.date,
+      status: BookingStatus.PENDING_PAYMENT,
+      availabilityId,
+    },
+  });
 
+  await prisma.availability.update({
+    where: { id: availability.id },
+    data: { isBooked: true },
+  });
 
+  const successBase = `${envConfig.CLIENT_URL}/dashboard/bookings`;
+  const cancelBase = `${envConfig.CLIENT_URL}/dashboard/bookings`;
 
-   const newBooking = await prisma.booking.create({
-      data: {
-        studentId,
-        tutorId,
-        dateTime: availability.date,
-        status: "CONFIRMED",
-        availabilityId:payload.availabilityId
-      },
-    });
+  const { checkoutUrl, paymentId } = await paymentServices.createBokingPurchaseSession(
+    studentId,
+    newBooking.id,
+    successBase,
+    cancelBase
+  );
 
-    // mark slot booked
-    await prisma.availability.update({
-      where: { id: availability.id },
-      data: { isBooked: true },
-    });
-
-  return newBooking;
+  return { booking: newBooking, checkoutUrl, paymentId };
 };
 
-
-const getAllBookings = async (userId: string,{page,status}:{page:string,status:BookingStatus}) => {
-
-
+const getAllBookings = async (
+  studentId: string,
+  query: { page?: string; status?: string }
+) => {
+  const page = Math.max(1, Number(query.page) || 1);
   const limit = 10;
-  const skip = (Number(page) -1) * limit;
+  const skip = (page - 1) * limit;
 
+  const rawStatus = query.status?.trim();
+  const statusFilter =
+    rawStatus && (Object.values(BookingStatus) as string[]).includes(rawStatus)
+      ? (rawStatus as BookingStatus)
+      : undefined;
+
+  const where: Prisma.BookingWhereInput = {
+    studentId,
+    ...(statusFilter ? { status: statusFilter } : {}),
+  };
 
   const bookings = await prisma.booking.findMany({
-    where: { studentId: userId,status:status},
-    include:{
-      review:true
-    },
-    orderBy: { dateTime: "asc" },
-    skip:skip,
-    take:limit
+    where,
+    include: { review: true },
+    orderBy: { dateTime: "desc" },
+    skip,
+    take: limit,
   });
 
-
-  const tutorIds = [...new Set(bookings.map(b => b.tutorId))];
-
+  const tutorIds = [...new Set(bookings.map((b) => b.tutorId))];
 
   const tutors = await prisma.tutorProfile.findMany({
-    where: { id: { in: tutorIds }, 
-  
-  },
-  include:{
-    user:true
-  }
+    where: { id: { in: tutorIds } },
+    include: { user: true },
   });
 
-
-  const bookingsWithTutor = bookings.map(b => ({
+  return bookings.map((b) => ({
     ...b,
-    tutor: tutors.find(t => t.id === b.tutorId) || null
+    tutor: tutors.find((t) => t.id === b.tutorId) || null,
   }));
-
-  return bookingsWithTutor;
 };
 
 const getBookingDetails = async (bookingId: string) => {
   const bookingDetails = await prisma.booking.findUnique({
-    where: {
-      id: bookingId,
-    },
+    where: { id: bookingId },
     include: {
       student: true,
       review: {
-        include:{
-          student:true
-        }
+        include: { student: true },
       },
-      
       availability: {
         include: {
           tutor: {
-            include:{
-              user:{
-                select:{
-                  profileAvater:true,
-                  name:true
-                }
-              }
-            }
-          }
-        }
+            include: {
+              user: {
+                select: { profileAvater: true, name: true },
+              },
+            },
+          },
+        },
       },
     },
   });
@@ -138,46 +127,39 @@ const getBookingDetails = async (bookingId: string) => {
   };
 };
 
-  const cancelBooking = async (userId: string, bookingId: string,status: "CANCELLED") => {
-
-  await authServices.isUserExist(userId, "USER");
-
-console.log("bookingId",bookingId);
-
-
-  const isBookingExist = await prisma.booking.findUnique({
-    where: {
-      id: bookingId
-    }
-  })
-
-  if (!isBookingExist) {
-    throw new AppError("Bookign not found")
-  }
-  const booking = await prisma.booking.update({
-    where: {
-      id: bookingId
-    },
-    data: {
-      status:"CANCELLED"
-    }
+const cancelBooking = async (studentId: string, bookingId: string) => {
+  const booking = await prisma.booking.findUnique({
+    where: { id: bookingId },
   });
 
-  await prisma.availability.update({
-    where:{
-      id:booking.availabilityId
-    },
-    data:{
-      isBooked:false
-    }
-  })
+  if (!booking || booking.studentId !== studentId) {
+    throw new AppError("Booking not found", 404);
+  }
 
-  return booking
+  if (booking.status === BookingStatus.CANCELLED) {
+    return booking;
+  }
 
+  await prisma.$transaction(async (tx) => {
+    await tx.booking.update({
+      where: { id: bookingId },
+      data: { status: BookingStatus.CANCELLED },
+    });
+    await tx.availability.update({
+      where: { id: booking.availabilityId },
+      data: { isBooked: false },
+    });
+    await tx.payment.deleteMany({
+      where: { bookingId, status: PaymentStatus.PENDING },
+    });
+  });
+
+  return prisma.booking.findUnique({ where: { id: bookingId } });
 };
 
 export const bookingServices = {
   createBooking,
   getBookingDetails,
-  getAllBookings,cancelBooking
+  getAllBookings,
+  cancelBooking,
 };

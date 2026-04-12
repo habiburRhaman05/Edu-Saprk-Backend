@@ -79,8 +79,14 @@ console.log(user);
       role: user.role,
       email: user.email,
     };
-    res.locals.user = user.role === UserRole.USER ? user.student as Student :  user.role === UserRole.MODERATOR ?  user.moderator : user.role === UserRole.TUTOR ? user.tutorProfile :user.role === UserRole.TECHNICIAN ? user.technician : user.admin as any
-console.log(res.locals.user);
+    res.locals.user = 
+      (user.role === UserRole.USER || user.role === UserRole.STUDENT) ? user.student : 
+      user.role === UserRole.MODERATOR ? user.moderator : 
+      user.role === UserRole.TUTOR ? user.tutorProfile : 
+      user.role === UserRole.TECHNICIAN ? user.technician : 
+      user.admin;
+      
+    console.log("Resolved res.locals.user:", res.locals.user);
 
     return next();
   } catch (error) {

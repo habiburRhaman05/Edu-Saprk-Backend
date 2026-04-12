@@ -32,7 +32,7 @@ paymentRouter.get(
 paymentRouter.get(
   "/user/:userId/transactions",
   authMiddleware, 
-  roleMiddleware([UserRole.STUDENT,UserRole.TUTOR]),
+  roleMiddleware([UserRole.USER, UserRole.TUTOR]),
   getUserPaymentHistoryById
 );
 

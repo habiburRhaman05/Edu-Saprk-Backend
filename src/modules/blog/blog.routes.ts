@@ -8,13 +8,14 @@ import {
   getBlogsQuerySchema,
 } from "./blog.validation";
 import { authMiddleware, roleMiddleware } from "../../middleware/auth-middlewares";
+import { UserRole } from "../../generated/prisma/enums";
 
 const router = Router();
 
 router.post("/",
     
     authMiddleware,
-    roleMiddleware(["MODERATOR"]),
+    roleMiddleware([UserRole.MODERATOR]),
     // validateRequest(createBlogSchema)
      blogController.createBlog);
 
@@ -25,7 +26,7 @@ router.get("/:blogId", validateRequest(blogIdParamsSchema,), blogController.getB
 router.patch(
   "/:blogId",
    authMiddleware,
-    roleMiddleware(["MODERATOR"]),
+    roleMiddleware([UserRole.MODERATOR]),
   validateRequest(blogIdParamsSchema,),
   validateRequest(updateBlogSchema),
   blogController.updateBlog
@@ -34,7 +35,7 @@ router.patch(
 router.delete(
   "/:blogId",
    authMiddleware,
-    roleMiddleware(["MODERATOR"]),
+    roleMiddleware([UserRole.MODERATOR]),
   validateRequest(blogIdParamsSchema,),
   blogController.deleteBlog
 );

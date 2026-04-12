@@ -30,21 +30,61 @@ const registerUser = async (payload: IRegisterPayload) => {
       }
     });
 
+
+    if(user.role === UserRole.STUDENT){
+      await prisma.student.create({
+        data:{
+          name:user.name,
+          email:user.email,
+          bio:"",
+          userId:user.id,
+          emailVerified:user.emailVerified,
+          password:payload.password,
+          role:"STUDENT"
+        }
+      })
+    }
+
+
+    if(user.role === UserRole.TUTOR){
+       await prisma.tutorProfile.create({
+        data:{
+          name:user.name,
+          email:user.email,
+          bio:"",
+          userId:user.id,
+        category:"",
+        categoryId:"",
+        experience:"",
+        hourlyRate:0,
+        profileAvatar:"",
+        subjects:[]
+        }
+      })
+    }
+
     return { user,token };
   } catch (error: any) {
+    // 1. Prisma unique constraint error
     if (
       error instanceof Prisma.PrismaClientKnownRequestError &&
       error.code === "P2002"
     ) {
-      throw new AppError("Email already exists", 409);
+      const target = (error.meta?.target as string[]) || [];
+      if (target.includes("email")) {
+         throw new AppError("A user with this email already exists", 409);
+      }
+      throw new AppError(`Duplicate field value: ${target.join(", ")}`, 409);
     }
 
-    // Auth provider duplicate error
+    // 2. Auth provider duplicate error (Better Auth often uses 'user_already_exists' or similar)
+    const errorMsg = error?.message?.toLowerCase() || "";
     if (
-      error?.message?.toLowerCase().includes("already") ||
-      error?.message?.toLowerCase().includes("exists")
+      errorMsg.includes("already") || 
+      errorMsg.includes("exists") || 
+      error.code === "user_already_exists"
     ) {
-      throw new AppError("Email already registered", 409);
+      throw new AppError("This email is already registered. Please sign in instead.", 409);
     }
 
     // ❌ fallback
@@ -196,7 +236,7 @@ console.log("base",baseUser);
       PROFILE_CACHE_EXPIRE
     );
     console.log("tutor logged in");
-    return tutor;
+    return {...tutor,role:baseUser.role};
   } 
    else if(baseUser?.role === UserRole.TECHNICIAN){
      const technician = await prisma.technician.findUnique({

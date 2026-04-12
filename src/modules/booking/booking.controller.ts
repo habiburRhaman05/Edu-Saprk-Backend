@@ -1,17 +1,21 @@
 
 import  { NextFunction, Request, Response } from "express";
 import { bookingServices } from "./booking.service";
-import { sendSuccess } from "../../utils/apiResponse";
+import { sendError, sendSuccess } from "../../utils/apiResponse";
+import { Student } from "../../generated/prisma/client";
 
 
 const createBooking = async (req:Request,res:Response,next:NextFunction)=>{
   try {
-    const studentId = req.user?.userId!
-    const booking = await bookingServices.createBooking(studentId,req.body);
+    const student = res.locals.user as Student;
+    if (!student?.id) {
+      return sendError(res, { message: "Student profile required", statusCode: 403 });
+    }
+    const result = await bookingServices.createBooking(student.id, req.body);
     return sendSuccess(res,{
       statusCode:201,
       message:"booking created successfully",
-      data:booking
+      data:result
     })
   } catch (error) {
 next(error)
@@ -20,12 +24,15 @@ next(error)
 
 const getAllBookings  = async (req:Request,res:Response,next:NextFunction)=>{
   try {
-    const studentId = req.user?.userId!;
-    const {page,status} = req.query
-
-
-
-    const bookings = await bookingServices.getAllBookings(studentId,{page,status});
+    const student = res.locals.user as Student;
+    if (!student?.id) {
+      return sendError(res, { message: "Student profile required", statusCode: 403 });
+    }
+    const { page, status } = req.query;
+    const bookings = await bookingServices.getAllBookings(student.id, {
+      page: page as string | undefined,
+      status: status as string | undefined,
+    });
     return sendSuccess(res,{
       statusCode:200,
       message:"your bookings fetch successfully",
@@ -52,11 +59,12 @@ next(error)
 }
 const cancelBooking  = async (req:Request,res:Response,next:NextFunction)=>{
   try {
-       const {status} = req.body
-       const sessionId = req.params.id as string
-       const studentId = req.user?.userId as string
- 
-       const updateSession = await bookingServices.cancelBooking(studentId,sessionId,status);
+       const bookingId = req.params.id as string
+       const student = res.locals.user as Student;
+       if (!student?.id) {
+         return sendError(res, { message: "Student profile required", statusCode: 403 });
+       }
+       const updateSession = await bookingServices.cancelBooking(student.id, bookingId);
        sendSuccess(res,{
          message:"session cancel sucessfully",
          data:updateSession

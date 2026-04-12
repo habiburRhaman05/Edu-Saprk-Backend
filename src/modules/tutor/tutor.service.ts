@@ -2,6 +2,7 @@
 import { Prisma } from "../../generated/prisma/client";
 import { prisma } from "../../lib/prisma";
 import { AppError } from "../../utils/AppError";
+import { PaymentStatus } from "../../generated/prisma/enums";
 import { authServices } from "../auth/auth.service";
 import { TutorFilters, TutorProfileCreatePayload, TutorProfileUpdatePayload } from "./types";
 
@@ -207,12 +208,18 @@ const getAvailability = async (tutorUserId: string) => {
 // -------------------- GET  ALL   AVAILABITY SLOTS BY TUTORID --------------------
 
 const getAllAvailability = async (tutorUserId: string) => {
-  const slots = await prisma.availability.findMany({
-    where: { tutorId: tutorUserId },
+  const tutor = await prisma.tutorProfile.findUnique({
+    where: { userId: tutorUserId },
   });
 
- 
-  return slots
+  if (!tutor) {
+    throw { statusCode: 404, message: "Tutor profile not found" };
+  }
+
+  return prisma.availability.findMany({
+    where: { tutorId: tutor.id },
+    orderBy: [{ date: "asc" }, { startTime: "asc" }],
+  });
 };
 // -------------------- DELETE TUTOR  AVAILABITY SLOT --------------------
 
@@ -251,30 +258,21 @@ const deleteAvailability = async (
 
 // -------------------- PUT MARK AS SESSION FINISH  --------------------
 
-const markdSessionFinish = async (userId: string, bookingId: string,status:string) => {
-
-  await authServices.isUserExist(userId, "TUTOR");
-
-
-  const isBookingExist = await prisma.booking.findUnique({
-    where: {
-      id: bookingId
-    }
-  })
-
-  if (!isBookingExist) {
-    throw new AppError("Bookign not found")
-  }
-  const updatedData = await prisma.booking.update({
-    where: {
-      id: bookingId
-    },
-    data: {
-      status:status === "COMPLETED" ? "COMPLETED" : "CANCELLED"
-    }
+const markdSessionFinish = async (tutorProfileId: string, bookingId: string, status: string) => {
+  const booking = await prisma.booking.findUnique({
+    where: { id: bookingId },
   });
 
-  return updatedData
+  if (!booking || booking.tutorId !== tutorProfileId) {
+    throw new AppError("Booking not found", 404);
+  }
+
+  return prisma.booking.update({
+    where: { id: bookingId },
+    data: {
+      status: status === "COMPLETED" ? "COMPLETED" : "CANCELLED",
+    },
+  });
 };
 
 // -------------------- GET ALL TUTORS LIST  --------------------
@@ -370,6 +368,8 @@ const markdSessionFinish = async (userId: string, bookingId: string,status:strin
       return t.avgRating >= Number(rating);
     });
 
+    
+
   return tutorsWithAvgRating;
 };
 
@@ -425,6 +425,33 @@ const getTutorProfilePublic = async (tutorUserId: string) => {
   };
 };
 
+
+const getTutorEarnings = async (userId: string) => {
+  const tutor = await prisma.tutorProfile.findUnique({
+    where: { userId },
+    include: { wallet: true },
+  });
+  if (!tutor) throw new AppError("Tutor profile not found", 404);
+
+  const recent = await prisma.payment.findMany({
+    where: {
+      status: PaymentStatus.SUCCESS,
+      session: { tutorId: tutor.id },
+    },
+    orderBy: { createdAt: "desc" },
+    take: 25,
+    include: {
+      user: { select: { name: true } },
+      session: { select: { id: true, dateTime: true } },
+    },
+  });
+
+  return {
+    balance: tutor.wallet?.balance ?? 0,
+    currency: "USD",
+    recent,
+  };
+};
 
 const tutorDashboardData = async (tutorId:string) => {
 
@@ -489,7 +516,6 @@ export const tutorServices = {
  getAvailability,
  deleteAvailability,
  tutorDashboardData,
- getAllAvailability
-
-
+ getAllAvailability,
+ getTutorEarnings,
 }

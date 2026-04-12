@@ -56,7 +56,9 @@ const updateUserStatus = async (req: Request, res: Response, next: NextFunction)
 const getAllBookings = async (req: Request, res: Response, next: NextFunction) => {
   try {
 
-    const user = await adminServices.getAllBookings();
+    const {page,status} = req.query
+
+    const user = await adminServices.getAllBookings(page,status);
     return sendSuccess(res, {
       statusCode: 200,
       message: "bookings fetch successfully",

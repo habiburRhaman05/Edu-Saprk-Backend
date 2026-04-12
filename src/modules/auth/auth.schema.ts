@@ -37,4 +37,15 @@ import { z } from "zod";
 });
 
 
-export const authSchemas = {registerUserSchema,loginSchema}
+const verifyEmailSchema = z.object({
+  body: z.object({
+    email: z.string().email("Please provide a valid email address"),
+    otp: z.string().min(4, "OTP is required"),
+  }),
+});
+
+export const authSchemas = {
+  registerUserSchema,
+  loginSchema,
+  verifyEmailSchema,
+};

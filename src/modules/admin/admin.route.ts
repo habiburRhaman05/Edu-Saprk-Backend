@@ -7,8 +7,8 @@ import { adminSchemas } from "./admin.schemas";
 
 const router:Router = Router();
 
-// All routes protected: only ADMIN role
-router.use(authMiddleware, roleMiddleware(["ADMIN"]));
+// All routes protected: ADMIN and MODERATOR role
+router.use(authMiddleware, roleMiddleware(["ADMIN", "MODERATOR"]));
 
 
 router.get("/profile", adminControllers.getProfile);

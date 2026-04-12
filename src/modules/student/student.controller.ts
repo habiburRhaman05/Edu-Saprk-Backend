@@ -50,6 +50,18 @@ import { asyncHandler } from "../../utils/asyncHandler";
     }
   }
 
+  const getSavedTutors = asyncHandler(async (req: Request, res: Response,next:NextFunction) => {
+   
+      const userId = res.locals.user.id
+      const tutors = await studentService.getSavedTutors(userId);
+      return sendSuccess(res,{
+        statusCode:200,
+        data:tutors,
+        message:"saved tutors fetched successfully"
+      })
+
+  });
+
   const deleteAccount= async (req: Request, res: Response,next:NextFunction) => {
     try {
    await studentService.deleteAccount(req.user!.userId);
@@ -116,5 +128,6 @@ import { asyncHandler } from "../../utils/asyncHandler";
 
 
 export const studentController = {
+  getSavedTutors,
  getProfile,updateProfile,deleteAccount,getStudentdashboardStats,updateProfileAvater,saveTutor,getStudentdashboardData
 };

@@ -1,5 +1,6 @@
 import { v7 as uuidv7 } from "uuid";
 
+import { Prisma } from "../../generated/prisma/client";
 import { prisma } from "../../lib/prisma";
 import { AppError } from "../../utils/AppError";
 import { uploadPdfBufferToCloudinary } from "../media/media.service";
@@ -8,7 +9,7 @@ import { generatePaymentInvoiceBuffer } from "./payment.utils";
 import { envConfig } from "../../config/env";
 import { getProfileCacheKey } from "../auth/auth.service";
 import { redis } from "../../config/redis";
-import { PaymentStatus, UserRole } from "../../generated/prisma/enums";
+import { BookingStatus, PaymentStatus, UserRole } from "../../generated/prisma/enums";
 import { stripe } from "../../config/stripe";
 import { emailQueue } from "../../queue/emailQueue";
 
@@ -34,6 +35,10 @@ const handleStripePaymentSuccess = async (paymentId: string) => {
       data: { status: PaymentStatus.SUCCESS, updatedAt: new Date() },
       include: { user: true, },
 
+    });
+    await tx.booking.update({
+      where: { id: payment.bookingId },
+      data: { status: BookingStatus.CONFIRMED },
     });
     const wallet = await tx.tutorWallet.upsert({
       where: { tutorId: payment.session.tutorId },
@@ -67,7 +72,9 @@ const generateAndSendInvoice = async (payment: any) => {
     planName: payment.plan?.name,
     credits: payment.plan?.credits,
     amount: payment.amount,
-    message: "✔ Payment Successful! Credits added to your account.",
+    message: payment.plan?.name
+      ? "✔ Payment Successful! Credits added to your account."
+      : "✔ Session payment successful. Your booking is confirmed.",
   };
 
   const invoiceBuffer = await generatePaymentInvoiceBuffer(invoicePayload);
@@ -95,7 +102,7 @@ const generateAndSendInvoice = async (payment: any) => {
       },
       transactionId: payment.id,
       amount: invoicePayload.amount,
-      credit: payment.plan.credits,
+      credit: payment.plan?.credits ?? 0,
       invoiceUrl: secure_url,
       dashboardUrl: `${envConfig.CLIENT_URL}/dashboard`
     },
@@ -116,99 +123,110 @@ const generateAndSendInvoice = async (payment: any) => {
 };
 
 const createBokingPurchaseSession = async (
-  userId: string,
+  studentId: string,
   bookingId: string,
   successUrl: string,
   cancelUrl: string
 ) => {
-
-
-  const existingPayment = await prisma.payment.findUnique({
-    where:{bookingId:bookingId,status:{in:["PENDING","FAILED"]}},include:{session:true}
+  const booking = await prisma.booking.findUnique({
+    where: { id: bookingId },
+    include: { student: true, tutor: true },
   });
 
-    const booking = await prisma.booking.findUnique({
-    where:{id:bookingId},
-    include:{student:true,tutor:true}
-  })
-  // if payment already created then re-create session only
-  if(existingPayment?.status === PaymentStatus.FAILED || PaymentStatus.PENDING){
-      const session = await stripe.checkout.sessions.create({
-    payment_method_types: ["card"],
-    line_items: [
-      {
-        price_data: {
-          currency:"USD",
-          product_data: { name: `${booking?.student.name} - ${booking?.tutor.name} credits` },
-          unit_amount: booking?.tutor.hourlyRate as number, // Stripe expects cents
-        },
-        quantity: 1,
-      },
-    ],
-    mode: "payment",
-    customer_email: booking?.student.email!, // optional: fetch user email if available
-    success_url: `${successUrl}/${existingPayment?.id!!}`,
-    cancel_url: `${cancelUrl}/${existingPayment?.id!}`,
-    metadata: {
-      paymentId: existingPayment?.id!,
-      userId,
-    },
-  });
-
-   console.log("session created");
-
-  return {
-    checkoutUrl: session.url,
-    paymentId: existingPayment?.id,
-  };
+  if (!booking) {
+    throw new AppError("Booking not found", 404);
   }
 
   const student = await prisma.student.findUnique({
-    where: { id: userId }
-  })
+    where: { id: studentId },
+  });
 
   if (!student) {
-    throw new AppError("Invalid or student", 404);
+    throw new AppError("Student not found", 404);
   }
 
+  const successBase = successUrl.replace(/\/$/, "");
+  const cancelBase = cancelUrl.replace(/\/$/, "");
+  const metadataUserId = student.userId;
 
+  const existingPayment = await prisma.payment.findUnique({
+    where: { bookingId },
+    include: { session: true },
+  });
 
-  // 2️⃣ Create pending payment record
+  const lineProductName = `Session with ${booking.tutor.name}`;
+
+  if (
+    existingPayment &&
+    (existingPayment.status === PaymentStatus.FAILED ||
+      existingPayment.status === PaymentStatus.PENDING)
+  ) {
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ["card"],
+      line_items: [
+        {
+          price_data: {
+            currency: "USD",
+            product_data: { name: lineProductName },
+            unit_amount: booking.tutor.hourlyRate,
+          },
+          quantity: 1,
+        },
+      ],
+      mode: "payment",
+      customer_email: booking.student.email ?? undefined,
+      success_url: `${successBase}?paymentId=${existingPayment.id}&status=success`,
+      cancel_url: `${cancelBase}?paymentId=${existingPayment.id}&status=cancel`,
+      metadata: {
+        paymentId: existingPayment.id,
+        userId: metadataUserId,
+        bookingId,
+      },
+    });
+
+    return {
+      checkoutUrl: session.url,
+      paymentId: existingPayment.id,
+    };
+  }
+
+  if (existingPayment?.status === PaymentStatus.SUCCESS) {
+    throw new AppError("This booking is already paid", 400);
+  }
+
   const payment = await prisma.payment.create({
     data: {
       userId: student.id,
-      bookingId: bookingId,
-      amount: booking?.tutor.hourlyRate as number,
+      bookingId,
+      amount: booking.tutor.hourlyRate,
       currency: "USD",
       status: PaymentStatus.PENDING,
-      paymentMethod: "STRIPE", 
+      paymentMethod: "STRIPE",
     },
   });
 
-  // 3️⃣ Create Stripe Checkout Session
   const session = await stripe.checkout.sessions.create({
     payment_method_types: ["card"],
     line_items: [
       {
         price_data: {
-          currency:"USD",
-          product_data: { name: `${booking?.student.name} - ${booking?.tutor.name} credits` },
-          unit_amount: booking?.tutor.hourlyRate as number, // Stripe expects cents
+          currency: "USD",
+          product_data: { name: lineProductName },
+          unit_amount: booking.tutor.hourlyRate,
         },
         quantity: 1,
       },
     ],
     mode: "payment",
-    customer_email: booking?.student.email!, // optional: fetch user email if available
-    success_url: `${successUrl}/${payment.id}`,
-    cancel_url: `${cancelUrl}/${payment.id}`,
+    customer_email: booking.student.email ?? undefined,
+    success_url: `${successBase}?paymentId=${payment.id}&status=success`,
+    cancel_url: `${cancelBase}?paymentId=${payment.id}&status=cancel`,
     metadata: {
       paymentId: payment.id,
-      userId,
+      userId: metadataUserId,
+      bookingId,
     },
   });
-
-   console.log("session created");
 
   return {
     checkoutUrl: session.url,
@@ -220,6 +238,7 @@ const createBokingPurchaseSession = async (
 const getAllTransactions = async (query: any) => {
   const page = Number(query.page) || 1
   const limit = Number(query.limit) || 10
+
   const skip = (page - 1) * limit
 
   const [result, total] = await Promise.all([
@@ -255,7 +274,7 @@ const getAllTransactions = async (query: any) => {
 }
 
 
-const getPaymentDetails = async (id) => {
+const getPaymentDetails = async (id: string) => {
   const payment = await prisma.payment.findUnique({
     where: {
       id: id
@@ -264,35 +283,97 @@ const getPaymentDetails = async (id) => {
   })
   return payment
 }
-const getUserPaymentHistory = async (id,query: any) => {
-  console.log(id);
- const page = Number(query.page) || 1
-  const limit = Number(query.limit) || 10
-  const skip = (page - 1) * limit
+function isUuidLike(s: string) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    s.trim()
+  );
+}
 
-  const payments = await prisma.payment.findMany({
-    where: {
-      userId: id
-    },
+const getUserPaymentHistory = async (id: string, query: Record<string, unknown>) => {
+  const page = Math.max(1, Number(query.page) || 1);
+  const limit = Math.min(50, Math.max(1, Number(query.limit) || 10));
+  const skip = (page - 1) * limit;
 
-    include: { user: true },
-    orderBy:{createdAt:"desc"},
-    skip:skip,
-    take:limit
-  });
+  const statusRaw = typeof query.status === "string" ? query.status.trim() : "";
+  const statusFilter =
+    statusRaw && (Object.values(PaymentStatus) as string[]).includes(statusRaw)
+      ? (statusRaw as PaymentStatus)
+      : undefined;
 
-  const paymentsCount = await prisma.payment.count()
+  const searchRaw = typeof query.search === "string" ? query.search.trim() : "";
 
+  const searchOr: Prisma.PaymentWhereInput[] = [];
+  if (searchRaw) {
+    searchOr.push({
+      transactionId: { contains: searchRaw, mode: "insensitive" },
+    });
+    if (isUuidLike(searchRaw)) {
+      searchOr.push({ id: searchRaw });
+      searchOr.push({ bookingId: searchRaw });
+    }
+  }
+
+  const listWhere: Prisma.PaymentWhereInput = {
+    userId: id,
+    ...(statusFilter ? { status: statusFilter } : {}),
+    ...(searchOr.length ? { OR: searchOr } : {}),
+  };
+
+  const userWhere: Prisma.PaymentWhereInput = { userId: id };
+
+  const [
+    payments,
+    totalFiltered,
+    successAgg,
+    allCount,
+    successCount,
+    pendingCount,
+    failedCount,
+  ] = await Promise.all([
+    prisma.payment.findMany({
+      where: listWhere,
+      include: { user: true },
+      orderBy: { createdAt: "desc" },
+      skip,
+      take: limit,
+    }),
+    prisma.payment.count({ where: listWhere }),
+    prisma.payment.aggregate({
+      where: { ...userWhere, status: PaymentStatus.SUCCESS },
+      _sum: { amount: true },
+    }),
+    prisma.payment.count({ where: userWhere }),
+    prisma.payment.count({
+      where: { ...userWhere, status: PaymentStatus.SUCCESS },
+    }),
+    prisma.payment.count({
+      where: { ...userWhere, status: PaymentStatus.PENDING },
+    }),
+    prisma.payment.count({
+      where: { ...userWhere, status: PaymentStatus.FAILED },
+    }),
+  ]);
+
+  const totalPaid = successAgg._sum.amount ?? 0;
+  const totalPages = Math.max(1, Math.ceil(totalFiltered / limit));
 
   return {
-   meta:{
-     totalPages:paymentsCount,
-   },
-   paymentsList:payments
-
-
-  }
-}
+    meta: {
+      page,
+      limit,
+      total: totalFiltered,
+      totalPages,
+      summary: {
+        totalPaid,
+        totalTransactions: allCount,
+        successfulCount: successCount,
+        pendingCount,
+        failedCount,
+      },
+    },
+    paymentsList: payments,
+  };
+};
 
 export const paymentServices = { handleStripePaymentSuccess, generateAndSendInvoice, createBokingPurchaseSession, getAllTransactions, getPaymentDetails, getUserPaymentHistory }
 

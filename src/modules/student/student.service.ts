@@ -180,7 +180,25 @@ return {totalBooking,totalReview}
   };
 }
 
+const getSavedTutors = async (userId) => {
 
+
+  const user = await prisma.student.findUnique({
+    where:{id:userId}
+  })
+
+  if(user?.savedTutors.length === 0){
+    return []
+  }
+
+  const tutors = await prisma.tutorProfile.findMany({
+    where: {
+      id: { in: user?.savedTutors as string[] },
+    },
+  });
+  return tutors;
+
+};
 
 
 export const studentService = {
@@ -188,6 +206,7 @@ export const studentService = {
  updateProfile,deleteAccount,
 getStudentStatsData,
 getAllStudentDashboardData,
-savedTutor
+savedTutor,
+getSavedTutors,
  
 };

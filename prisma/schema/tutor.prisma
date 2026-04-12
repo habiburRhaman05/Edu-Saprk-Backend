@@ -2,6 +2,7 @@ model TutorProfile {
   id           String         @id @default(uuid())
   userId       String         @unique
   name          String
+  email          String @unique
   bio          String
   hourlyRate   Int
   experience   String

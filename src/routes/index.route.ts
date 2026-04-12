@@ -12,6 +12,7 @@ import tutorRoutes, { tutorsRouterPublic } from "../modules/tutor/tutor.route";
 
 import aiRoutes from "../modules/generativeAI/ai.routes";
 import issueRouter from "../modules/issue/issue.routes";
+import blogRoutes from "../modules/blog/blog.routes";
 
 const indexRouter = Router();
 
@@ -27,5 +28,6 @@ indexRouter.use("/student",studentRoutes) // student only
 indexRouter.use("/admin",adminRoutes) // admin only 
 indexRouter.use("/shared",sharedRoutes)
 indexRouter.use("/payment",paymentRouter) // payments routes
+indexRouter.use("/blog", blogRoutes)
 
 export default indexRouter

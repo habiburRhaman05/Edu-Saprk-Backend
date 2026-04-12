@@ -65,23 +65,33 @@ if (filter.role && filter.role !== "ALL") {
     data: users,
   };
 };
-const getAllBookings = async () => {
+const getAllBookings = async (page = 1, status, limit = 10) => {
+  console.log(status,"status");
+  
+  const skip = (page - 1) * limit;
+
   return await prisma.booking.findMany({
-    include:{
-student:true,
-availability:true,
-review:true,
-tutor:{
- include:{
-  user:{
-    select:{
-      name:true
-    }
-  }
- }
-}
+    where: {
+
+      ...(status && { status }),
+    },
+    include: {
+      student: true,
+      availability: true,
+      review: true,
+      tutor: {
+        include: {
+          user: {
+            select: {
+              name: true,
+            },
+          },
+        },
+      },
     },
     orderBy: { createdAt: "desc" },
+    skip: skip < 0 ? 0 : skip, // Prevents errors if page is 0 or negative
+    take: limit,
   });
 };
 

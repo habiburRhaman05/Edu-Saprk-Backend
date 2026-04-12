@@ -118,17 +118,29 @@ const getAllBlogs = async (query: IGetBlogsQuery) => {
   const { page = 1, limit = 10, search, status, category, authorId } = query;
 
   const skip = (page - 1) * limit;
-const filters: Prisma.BlogWhereInput[] = [];
+  const filters: Prisma.BlogWhereInput[] = [];
 
-if (query.status) filters.push({ status: query.status });
-if (query.category) filters.push({ category: query.category });
+  if (query.status) filters.push({ status: query.status });
+  if (query.category) filters.push({ category: query.category });
+  if (authorId) filters.push({ authorId });
 
-const where: Prisma.BlogWhereInput = filters.length > 0 ? { AND: filters } : {};
+  const term = search?.trim();
+  if (term) {
+    filters.push({
+      OR: [
+        { title: { contains: term, mode: "insensitive" } },
+        { excerpt: { contains: term, mode: "insensitive" } },
+        { slug: { contains: term, mode: "insensitive" } },
+      ],
+    });
+  }
 
-  const  [total,blogs] = await Promise.all([
-    prisma.blog.count(),
+  const where: Prisma.BlogWhereInput = filters.length > 0 ? { AND: filters } : {};
+
+  const [total, blogs] = await Promise.all([
+    prisma.blog.count({ where }),
     prisma.blog.findMany({
-        where,
+      where,
       skip,
       take: limit,
       orderBy: { createdAt: "desc" },
@@ -144,8 +156,8 @@ const where: Prisma.BlogWhereInput = filters.length > 0 ? { AND: filters } : {};
     meta: {
       page,
       limit,
-    total:total,
-      totalPages: Math.ceil(blogs.length / limit),
+      total,
+      totalPages: Math.max(1, Math.ceil(total / limit)),
     },
   };
 

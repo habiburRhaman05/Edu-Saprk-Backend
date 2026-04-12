@@ -15,6 +15,12 @@ const router:Router = Router();
 
 router.post("/register",validateRequest(authSchemas.registerUserSchema), authControllers.registerController);
 router.post("/login",validateRequest(authSchemas.loginSchema), authControllers.loginController);
+router.post("/refresh-token", authControllers.getRefreshTokenController);
+router.post(
+  "/verify-email",
+  validateRequest(authSchemas.verifyEmailSchema),
+  authControllers.verifyEmail
+);
 router.get("/me", authMiddleware, authControllers.getUserProfileController);
 router.put("/profile/change-avater",authMiddleware,roleMiddleware([UserRole.STUDENT,UserRole.TUTOR,UserRole.ADMIN,UserRole.MODERATOR,UserRole.TECHNICIAN]),upload.single("file"), authControllers.changeProfileAvatar);
 router.put("/profile/update",authMiddleware,roleMiddleware([UserRole.STUDENT,UserRole.TUTOR,UserRole.ADMIN,UserRole.MODERATOR,UserRole.TECHNICIAN]),upload.single("file"), authControllers.updateProfileInfo);

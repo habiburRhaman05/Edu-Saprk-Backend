@@ -8,6 +8,7 @@ const router:Router = Router();
 // Only students can access these routes
 
 
+router.get("/get-tutors",authMiddleware,roleMiddleware(["STUDENT"]),studentController.getSavedTutors);
 router.get("/profile",authMiddleware,roleMiddleware(["STUDENT"]), studentController.getProfile);
 router.put("/profile",authMiddleware,roleMiddleware(["STUDENT"]), studentController.updateProfile);
 router.post("/profile/avater-change",authMiddleware,roleMiddleware(["STUDENT"]), studentController.updateProfile);
@@ -15,7 +16,6 @@ router.get("/:id/dashboard/stats",authMiddleware,roleMiddleware(["STUDENT"]),stu
 router.get("/:id/dashboard/data",authMiddleware,roleMiddleware(["STUDENT"]),studentController.getStudentdashboardData);
 
 router.post("/savedTutor/:tutorId",authMiddleware,roleMiddleware(["STUDENT"]),studentController.saveTutor);
-
  
 
 
