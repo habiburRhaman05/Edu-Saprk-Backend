@@ -1,21 +1,20 @@
-# SkillBridge Backend ⚙️  
+# Edu Spark Backend ⚙️  
 Scalable REST API for a Tutor–Student Marketplace
 
-> SkillBridge Backend is a production-ready REST API that powers the SkillBridge learning platform.  
+> Edu Spark Backend is a production-ready REST API that powers the SkillBridge learning platform.  
 > It provides secure authentication, role-based authorization, tutor discovery, bookings, reviews, and admin moderation.
 
 ---
 
 ## 🔗 Live & Repository Links
 
-- 🌐 Live API:https://skill-bridge-backend-production-7e35.up.railway.app
-- 📦 GitHub Repo: https://github.com/habiburRhaman/skill-bridge-backend  
+- 📦 GitHub Repo: https://github.com/habiburRhaman05/EduSpark-modern-learning-platfrom 
 
 ---
 
 ## 📌 About This Repository
 
-This repository contains **only the backend** of SkillBridge.
+This repository contains **only the backend** of Edu Spark.
 
 - ❌ No frontend UI
 - ❌ No client routing
@@ -159,7 +158,7 @@ Create a `.env` file:
 PORT=5000
 DATABASE_URL=postgresql://user:password@host:port/db
 JWT_SECRET=your_super_secret_key
-FRONTEND_URL=https://skill-bridge-frontend-gamma.vercel.app
+FRONTEND_URL=https://edu-spark-zone.vercel.app
 NODE_ENV=production
 ```
 
@@ -168,7 +167,7 @@ NODE_ENV=production
 ## 🚀 Run Locally
 
 ```
-git clone https://github.com/habiburRhaman/skill-bridge-backend.git
+git clone https://github.com/habiburRhaman05/EduSpark-modern-learning-platfrom.git
 cd skill-bridge-backend
 npm install
 npx prisma generate
